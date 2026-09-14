@@ -7,7 +7,6 @@ from sqlalchemy import Enum as SQLEnum, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database.Base import Base
-from src.auth.model.VerificationStatus import EmailVerificationStatus
 
 
 # -------------------------
@@ -24,6 +23,9 @@ class CredentialType(str, Enum):
     STANDARD = "STANDARD"
     GOOGLE_OAUTH = "GOOGLE_OAUTH"
 
+class EmailVerificationStatus(str, Enum):
+    PENDING = "PENDING"
+    VERIFIED = "VERIFIED"
 
 # -------------------------
 # Account Model
