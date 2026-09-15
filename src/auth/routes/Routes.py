@@ -1,28 +1,24 @@
-from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends
+from typing import Annotated
+from src.auth.controller.Controller import AuthController
 
-from src.auth.controller import Controller as controller
 
-router = APIRouter(
-    prefix="/auth",
-    tags=["Auth"],
-    responses={404: {"description": "Not found"}},
-)
+def getRouter()->APIRouter:
 
-class RegistrationRequest(BaseModel):
-    email: str = Field(..., json_schema_extra={"example": "sahil.verma@w3villa.com"})
-    password: str = Field(..., json_schema_extra={"example": "Sahil@123"})
-    verification_code: str = Field(..., json_schema_extra={"example": "1234"})
+    router: APIRouter = APIRouter(
+        prefix="/auth",
+        tags=["Auth"],
+        responses={404: {"description": "Not found"}},
+    )
 
-@router.post("/register")
-def register(body: RegistrationRequest):
-    # controller.register(registration_request.email, registration_request.password, registration_request.verification_code);
-    return {"message": "User registered successfully"}
+    @router.get("/registration-mail")
+    async def getRegistrationMail(
+        authController: Annotated[AuthController, Depends(AuthController)],
+        email: str
+    ):
 
-@router.get("/registration-mail")
-def sendVerificationMail(email: str):
-    return controller.sendVerificationMail(email);
+        return await authController.getRegistrationMail(email);
+        
 
-@router.post("/resend-verification-mail")
-def resendVerificationMail():
-    controller.resendVerificationMail();
+
+    return router;

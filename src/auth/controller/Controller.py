@@ -1,13 +1,17 @@
-from src.auth.services.RegistrationLinkService import registrationLinkService
+from typing import Annotated
+from fastapi import Depends;
 
-def register():
-    pass;
+from src.auth.services.RegistrationLinkService import RegistrationLinkService
 
-def sendVerificationMail(email: str):
-    
-    registrationLinkService.create_registration_link(email)
 
-    return {"message": "Verification email sent to " + email, "registration-link": "http://localhost:8000/auth/register?code=" + "1234"};
+class AuthController:
+    def __init__(self, registrationLinkService: Annotated[RegistrationLinkService, Depends(RegistrationLinkService)]):
+        print("AuthController initialized")
 
-def resendVerificationMail():
-    pass;
+        self.registrationLinkService = registrationLinkService;
+        
+
+    async def getRegistrationMail(self, email:str):
+
+        return self.registrationLinkService.create_registration_link(email)
+        

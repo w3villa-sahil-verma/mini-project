@@ -1,13 +1,16 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from src.database.Database import Database;
+from fastapi import FastAPI, APIRouter
 
+from src.database.Database import Database;
+from src.apis.v1.Routes import router;
+
+APPLICATION_NAME = "Gym Management System"
 
 class Application: 
     def __init__(self, name):
-        self.name = name
-        self.app = FastAPI(title=self.name, lifespan=self.lifespan)
-        self.db = Database()
+        self.name:str = name
+        self.app: FastAPI = FastAPI(title=self.name, lifespan=self.lifespan)
+        self.db: Database = Database()
 
     @asynccontextmanager
     async def lifespan(self, app: FastAPI):
@@ -24,12 +27,14 @@ class Application:
 
         await self.db.close()
 
-    def register_routes(self):
+    def registerRouter(self, router:APIRouter ):
+        self.app.include_router(router)
         pass;
 
 
-APPLICATION_NAME = "Gym Management System"
 
 application = Application(APPLICATION_NAME)
+
+application.registerRouter(router)
 
 app = application.app;
