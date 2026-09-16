@@ -1,9 +1,15 @@
+from typing import Annotated;
+from fastapi import Depends;
 
-class NotificationService:
+from src.common.notification.Notification import Notification;
+from src.common.notification.ABC_NotificationStrategy import NotificationStrategy;
+from src.common.notification.email.Strategy import EmailNotificationStrategy
 
-    def notify(self, email: str, token: str):
-        """
-        Notify the user about an event.
-        """
-        # Implementation of the notification logic goes here
-        print(f"Notification sent to {email}: /auth/register?code={token}")
+class NotificationService:  
+    """Application service responsible for sending notifications."""
+
+    def __init__(self, strategy: Annotated[NotificationStrategy, Depends(EmailNotificationStrategy)]):
+        self.strategy = strategy
+
+    async def send(self, notification: Notification) -> None:
+        await self.strategy.send(notification)

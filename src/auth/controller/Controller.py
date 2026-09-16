@@ -11,7 +11,7 @@ class AuthController:
 
     async def getRegistrationMail(self, email:str):
         
-        result =  self.registrationLinkService.create_registration_link(email)
+        result =  await self.registrationLinkService.create_registration_link(email)
 
         return {
             "message" : "success",
