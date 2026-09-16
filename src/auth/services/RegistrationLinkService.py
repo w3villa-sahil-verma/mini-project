@@ -10,13 +10,12 @@ class RegistrationLinkService:
     def create_registration_link(self, email: str):
         # step 1: Create a user and account.
 
+        # step 2: Create token
+
         # step 2: Send a verification email to the user with a unique registration link.
         self.notificationService.notify(email,"abc")
 
         return { "link" : f"http://abc.com?email={email}&code=abc"}
 
-    def validate_registration_link(self, link):
-        # Logic to validate the provided registration link
-        pass
         
 
