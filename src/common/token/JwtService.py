@@ -1,38 +1,38 @@
 # jwt_utils.py
 
 import jwt
-from datetime import datetime, timedelta, timezone
 
 SECRET_KEY = "change-this-to-a-long-random-secret"
 ALGORITHM = "HS256"
 
 
-def create_access_token(payload: dict) -> str:
-    """Create a JWT access token."""
+class JwtTokenService:
+    def sign(self, payload: dict) -> str:
+        """Create a JWT access token."""
 
-    token = jwt.encode(
-        payload,
-        SECRET_KEY,
-        algorithm=ALGORITHM
-    )
-
-    return token
-
-
-def verify_token(token: str) -> dict:
-    """Verify a JWT and return its payload."""
-
-    try:
-        payload = jwt.decode(
-            token,
+        token = jwt.encode(
+            payload,
             SECRET_KEY,
-            algorithms=[ALGORITHM]
+            algorithm=ALGORITHM
         )
 
-        return payload
+        return token
 
-    except jwt.ExpiredSignatureError:
-        raise ValueError("Token has expired")
 
-    except jwt.InvalidTokenError:
-        raise ValueError("Invalid token")
+    def verify(self, token: str) -> dict:
+        """Verify a JWT and return its payload."""
+
+        try:
+            payload = jwt.decode(
+                token,
+                SECRET_KEY,
+                algorithms=[ALGORITHM]
+            )
+
+            return payload
+
+        except jwt.ExpiredSignatureError:
+            raise ValueError("Token has expired")
+
+        except jwt.InvalidTokenError:
+            raise ValueError("Invalid token")

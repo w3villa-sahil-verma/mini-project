@@ -1,26 +1,48 @@
 from fastapi import Depends
 from typing import Annotated
+from datetime import datetime, timedelta, timezone
+
 
 from src.common.notification.NotificationService import NotificationService
 from src.common.notification.Notification import Notification;
+from src.common.token.JwtService import JwtTokenService;
 
 class RegistrationLinkService:
-    def __init__(self, notification_service: Annotated[NotificationService, Depends(NotificationService)]):
+    def __init__(
+            self, 
+            notification_service: Annotated[NotificationService, Depends(NotificationService)],
+            tokenService: Annotated[JwtTokenService, Depends(JwtTokenService)]
+        ):
         self.notificationService = notification_service;
+        self.tokenService = tokenService;
 
     async def create_registration_link(self, email: str):
+
+        EXP_IN_MIN = 5
+
         # step 1: Create a user and account.
 
+
         # step 2: Create token
+        tokenPayload = {
+            "type": "registration",
+            "email": email,
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=EXP_IN_MIN),
+            "iat": datetime.now(timezone.utc),
+        }
+
+        token = self.tokenService.sign(tokenPayload)
 
         # step 2: Send a verification email to the user with a unique registration link.
         await self.notificationService.send(Notification(
             recipient=email,
-            body="http://abc.com?email={email}&code=abc",
-            subject="GYM Registration mail"
+            subject="GYM Registration mail",
+            body=f"http://abc.com?email={email}&code={token}"
         ))
 
-        return { "link" : f"http://abc.com?email={email}&code=abc"}
+        return {
+            "message" : "Mail sended Successfully"
+        }
 
         
 

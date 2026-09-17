@@ -36,4 +36,7 @@ application = Application(APPLICATION_NAME)
 
 application.registerRouter(router)
 
+async def getAsyncDbSession():
+    return application.db.getAsyncSession()
+
 app = application.app;

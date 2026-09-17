@@ -77,7 +77,7 @@ class Database:
             expire_on_commit=False,
         )
 
-    def get_session(self):
+    async def getAsyncSession(self):
         if not self.AsyncSessionLocal:
             raise Exception("Session factory is not initialized. Call initialize_database() first.")
         
