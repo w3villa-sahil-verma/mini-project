@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import String, DateTime
+from sqlalchemy import DateTime
 from sqlalchemy import Enum as SQLEnum, ForeignKey, Integer
 
 from sqlalchemy.orm import Mapped, mapped_column
@@ -40,8 +40,8 @@ class Account(Base):
         autoincrement=True,
     )
 
-    user_id: Mapped[str] = mapped_column(
-        String,
+    user_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("users.id"),
         nullable=False,
         unique=True,

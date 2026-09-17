@@ -1,26 +1,40 @@
 from fastapi import Depends
 from typing import Annotated
 from datetime import datetime, timedelta, timezone
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
+from src.auth.model.Account import Account
+from src.auth.model.User import User
 from src.common.notification.NotificationService import NotificationService
 from src.common.notification.Notification import Notification;
 from src.common.token.JwtService import JwtTokenService;
+from src.database.Database import getAsyncDbSession
+
 
 class RegistrationLinkService:
     def __init__(
             self, 
             notification_service: Annotated[NotificationService, Depends(NotificationService)],
-            tokenService: Annotated[JwtTokenService, Depends(JwtTokenService)]
+            tokenService: Annotated[JwtTokenService, Depends(JwtTokenService)],
+            session: Annotated[AsyncSession, Depends(getAsyncDbSession)]
+
         ):
         self.notificationService = notification_service;
         self.tokenService = tokenService;
+        self.session = session;
 
     async def create_registration_link(self, email: str):
 
-        EXP_IN_MIN = 5
+        EXP_IN_MIN = 60
 
         # step 1: Create a user and account.
+        user = User(email=email)
+        self.session.add(user)
+        await self.session.flush()
+
+        self.session.add(Account(user_id=user.id))
+        await self.session.commit()
 
 
         # step 2: Create token

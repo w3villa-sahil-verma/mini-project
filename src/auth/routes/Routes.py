@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from typing import Annotated
+
 from src.auth.controller.Controller import AuthController
 
 

@@ -86,3 +86,14 @@ class Database:
     async def close(self):
         if self.engine:
             await self.engine.dispose()
+
+
+db = Database();
+
+async def getAsyncDbSession():
+    session = await db.getAsyncSession()
+
+    try:
+        yield session
+    finally:
+        await session.close()
