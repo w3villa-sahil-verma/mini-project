@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.model.Account import Account
+from src.models.Account import Account
 
 
 class AccountRepository:

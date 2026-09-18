@@ -4,8 +4,8 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-from src.auth.model.Account import Account
-from src.auth.model.User import User
+from src.models.Account import Account
+from src.models.User import User
 from src.common.notification.NotificationService import NotificationService
 from src.common.notification.Notification import Notification;
 from src.common.token.JwtService import JwtTokenService;
@@ -18,7 +18,6 @@ class RegistrationLinkService:
             notification_service: Annotated[NotificationService, Depends(NotificationService)],
             tokenService: Annotated[JwtTokenService, Depends(JwtTokenService)],
             session: Annotated[AsyncSession, Depends(getAsyncDbSession)]
-
         ):
         self.notificationService = notification_service;
         self.tokenService = tokenService;
@@ -29,6 +28,7 @@ class RegistrationLinkService:
         EXP_IN_MIN = 60
 
         # step 1: Create a user and account.
+        # TODO : Wrap in transaction
         user = User(email=email)
         self.session.add(user)
         await self.session.flush()
