@@ -1,5 +1,3 @@
-# jwt_utils.py
-
 import jwt
 
 SECRET_KEY = "change-this-to-a-long-random-secret"

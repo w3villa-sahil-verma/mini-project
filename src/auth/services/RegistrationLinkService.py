@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.common.notification.NotificationService import NotificationService
 from src.common.notification.Notification import Notification;
 from src.common.token.JwtService import JwtTokenService;
-from src.database.Database import getAsyncDbSession
 from src.common.token.constants import TOKEN_TYPES;
+from src.database.Database import getAsyncDbSession
 
 
 class RegistrationLinkService:
