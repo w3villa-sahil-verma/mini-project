@@ -2,16 +2,15 @@ from typing import Annotated
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends, Request
+from fastapi import Depends
 
 from src.models.User import User
 from src.models.Account import Account, EmailVerificationStatus
 from src.models.Credential import Credential
 from src.common.token.JwtService import JwtTokenService
 from src.common.token.constants import TOKEN_TYPES;
-from src.database.Database import getAsyncDbSession
 from src.common.security.HashingService import HashingService
-
+from src.database.Database import getAsyncDbSession
 
 class StandardRegistration:
     def __init__(
@@ -54,7 +53,6 @@ class StandardRegistration:
             self.db.add(credential)
 
         # transaction commits automatically here
-
 
         # Generate access token after successful commit
         EXP_IN_MIN = 24 * 60 # 1 day

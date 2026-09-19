@@ -1,17 +1,20 @@
 from typing import Annotated
-from fastapi import Depends, Request;
+from fastapi import Depends, Request, Response;
 
 from src.auth.services.RegistrationLinkService import RegistrationLinkService
 from src.auth.services.RegistrationService import RegistrationService
+from src.auth.services.AuthenticationService import AuthenticationService;
 
 class AuthController:
     def __init__(
             self, 
             registrationLinkService: Annotated[RegistrationLinkService, Depends(RegistrationLinkService)],
-            registrationService: Annotated[RegistrationService, Depends(RegistrationService)]
+            registrationService: Annotated[RegistrationService, Depends(RegistrationService)],
+            authService: Annotated[AuthenticationService, Depends(AuthenticationService)]
         ):
         self.registrationLinkService = registrationLinkService;
         self.registrationService = registrationService;
+        self.authService = authService;
         
 
     async def getRegistrationMail(self, email:str):
@@ -40,4 +43,26 @@ class AuthController:
             "message" : "success",
             "data" : result
         }
+
+    async def login(self, email: str, password:str, response: Response):
+
+        result = await self.authService.authenticate(email, password);
+
+        # TODO : http-only-cookie
+        # set access_token in cookie
+        response.set_cookie(key="access_token", value=result)
+
+        return {
+            "message" : "success",
+            "data" : {
+                "access_token": result
+            }
+        }
+
+
+    async def logout(self):
+
+        # remove accesstoken from http-only-cookie
+
+        pass;
         
