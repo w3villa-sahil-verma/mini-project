@@ -1,50 +1,17 @@
 from fastapi import Depends
 from typing import Annotated
-from datetime import datetime, timedelta, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.common.notification.NotificationService import NotificationService
-from src.common.notification.Notification import Notification;
-from src.common.token.JwtService import JwtTokenService;
-from src.common.token.constants import TOKEN_TYPES;
-from src.database.Database import getAsyncDbSession
-
+from src.auth.strategies.JwtRegistrationLinkStrategy import JwtRegistrationLinkService
 
 class RegistrationLinkService:
     def __init__(
             self, 
-            notification_service: Annotated[NotificationService, Depends(NotificationService)],
-            tokenService: Annotated[JwtTokenService, Depends(JwtTokenService)],
-            session: Annotated[AsyncSession, Depends(getAsyncDbSession)]
+            strategy: Annotated[JwtRegistrationLinkService, Depends(JwtRegistrationLinkService)]
         ):
-        self.notificationService = notification_service;
-        self.tokenService = tokenService;
-        self.session = session;
+        self.strategy = strategy;
 
     async def create_registration_link(self, email: str):
-
-        EXP_IN_MIN = 60
-
-        # step 2: Create token
-        tokenPayload = {
-            "type": TOKEN_TYPES.REGISTRATION,
-            "email": email,
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=EXP_IN_MIN),
-            "iat": datetime.now(timezone.utc),
-        }
-
-        token = self.tokenService.sign(tokenPayload)
-
-        # step 2: Send a verification email to the user with a unique registration link.
-        await self.notificationService.send(Notification(
-            recipient=email,
-            subject="GYM Registration mail",
-            body=f"http://abc.com?email={email}&code={token}"
-        ))
-
-        return {
-            "message" : "Mail sended Successfully"
-        }
+        return self.strategy.create_registration_link(email);
 
         
 
