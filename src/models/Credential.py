@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, String
 from sqlalchemy import Enum as SQLEnum, ForeignKey, Integer
 
 from sqlalchemy.orm import Mapped, mapped_column
@@ -32,12 +32,13 @@ class Credential(Base):
 
     user_id: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey("users.id"),
+        ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         unique=True,
     )
 
     hash: Mapped[str] = mapped_column(
+        String(100),
         nullable=False,
     )
 

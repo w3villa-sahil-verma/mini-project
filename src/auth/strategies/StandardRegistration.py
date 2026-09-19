@@ -2,7 +2,7 @@ from typing import Annotated
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
+from fastapi import Depends, Request
 
 from src.models.User import User
 from src.models.Account import Account, EmailVerificationStatus
@@ -23,7 +23,7 @@ class StandardRegistration:
         self.tokenService = tokenService;
         self.db = db;
 
-    async def register(self, email: str, password: str, token: str):
+    async def register(self, email:str, password:str, token:str):
 
         # verify the token
         payload = self.tokenService.verify(token=token)
