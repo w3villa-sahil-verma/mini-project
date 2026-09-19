@@ -7,6 +7,7 @@ from src.common.notification.NotificationService import NotificationService
 from src.common.notification.Notification import Notification;
 from src.common.token.JwtService import JwtTokenService;
 from src.database.Database import getAsyncDbSession
+from src.common.token.constants import TOKEN_TYPES;
 
 
 class RegistrationLinkService:
@@ -26,7 +27,7 @@ class RegistrationLinkService:
 
         # step 2: Create token
         tokenPayload = {
-            "type": "registration",
+            "type": TOKEN_TYPES.REGISTRATION,
             "email": email,
             "exp": datetime.now(timezone.utc) + timedelta(minutes=EXP_IN_MIN),
             "iat": datetime.now(timezone.utc),

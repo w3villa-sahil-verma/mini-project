@@ -6,8 +6,8 @@ class StandardRegistration:
 
         # verify the token
 
-        # Update Acount.email_verification_status = SUCCESS
+        # create user and account
 
-        # Send token
+        # Send access-token
 
         pass
