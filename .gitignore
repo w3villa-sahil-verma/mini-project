@@ -6,3 +6,8 @@ __pycache__/
 *$py.class
 
 .env
+
+
+# frontend
+
+frontend/node_modules
