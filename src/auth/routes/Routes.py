@@ -47,7 +47,7 @@ def getRouter()->APIRouter:
     async def oauthMeta(
         authController: Annotated[AuthController, Depends(AuthController)],
     ):
-        pass;
+        return await authController.getOauthMeta();
 
     @router.post("/oauth/login")
     async def oauthLogin(

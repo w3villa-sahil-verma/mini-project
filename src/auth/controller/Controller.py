@@ -59,7 +59,7 @@ class AuthController:
 
     async def getOauthMeta(self):
 
-        result = self.authService.getOauthMeta();
+        result = await self.authService.getOauthMeta();
 
         # CLIENT_ID + REDIRECT_URL + SCOPE
         return {

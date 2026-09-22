@@ -10,7 +10,7 @@ from src.common.token.JwtService import JwtTokenService
 from src.common.token.constants import TOKEN_TYPES
 from src.models.User import User
 from src.models.Credential import Credential
-from auth.strategies.ABC_AuthStrategy import AuthStrategy;
+from src.auth.strategies.ABC_AuthStrategy import AuthStrategy;
 from src.database.Database import getAsyncDbSession
 
 class StandardAuthStrategy(AuthStrategy):

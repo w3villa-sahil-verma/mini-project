@@ -1,5 +1,5 @@
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -12,8 +12,11 @@ class Settings(BaseSettings):
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(
+            env_file=".env",
+            extra="ignore"   # or remove this line if you want strict validation
+        )
+    
 
 
 settings = Settings()
