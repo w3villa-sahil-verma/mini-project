@@ -10,9 +10,10 @@ from src.common.token.JwtService import JwtTokenService
 from src.common.token.constants import TOKEN_TYPES
 from src.models.User import User
 from src.models.Credential import Credential
+from auth.strategies.ABC_AuthStrategy import AuthStrategy;
 from src.database.Database import getAsyncDbSession
 
-class StandardAuthStrategy:
+class StandardAuthStrategy(AuthStrategy):
     def __init__(
         self,
         db: Annotated[AsyncSession, Depends(getAsyncDbSession)],
@@ -71,7 +72,8 @@ class StandardAuthStrategy:
         # 5. Send access token
         return access_token
 
-    async def logout(self, email: str):
+    async def logout(self):
+        # TODO
         # JWT access tokens are stateless.
         #
         # If you want real server-side logout, you need to revoke
@@ -79,7 +81,4 @@ class StandardAuthStrategy:
         #
         # Without token revocation, logout is normally handled
         # by deleting the token on the client.
-
-        return {
-            "message": "Logged out successfully"
-        }
+        pass;
