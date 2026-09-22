@@ -10,17 +10,46 @@ from src.models.Credential import Credential
 from src.common.token.JwtService import JwtTokenService
 from src.common.token.constants import TOKEN_TYPES;
 from src.common.security.HashingService import HashingService
+from src.common.notification.NotificationService import NotificationService
+from src.common.notification.Notification import Notification;
+from src.auth.strategies.ABC_Registration import Registration;
 from src.database.Database import getAsyncDbSession
 
-class StandardRegistration:
+class JwtBasedRegistration(Registration):
     def __init__(
             self,
             tokenService: Annotated[JwtTokenService, Depends(JwtTokenService)],
-            db: Annotated[AsyncSession, Depends(getAsyncDbSession)]
-
+            db: Annotated[AsyncSession, Depends(getAsyncDbSession)],
+            notification_service: Annotated[NotificationService, Depends(NotificationService)],
     ) -> None:
         self.tokenService = tokenService;
         self.db = db;
+        self.notificationService = notification_service;
+
+    async def sendRegistrationLink(self, email: str):
+    
+            EXP_IN_MIN = 60
+    
+            # step 2: Create token
+            tokenPayload = {
+                "type": TOKEN_TYPES.REGISTRATION,
+                "email": email,
+                "exp": datetime.now(timezone.utc) + timedelta(minutes=EXP_IN_MIN),
+                "iat": datetime.now(timezone.utc),
+            }
+    
+            token = self.tokenService.sign(tokenPayload)
+    
+            # step 2: Send a verification email to the user with a unique registration link.
+            await self.notificationService.send(Notification(
+                recipient=email,
+                subject="GYM Registration mail",
+                body=f"http://abc.com?email={email}&code={token}"
+            ))
+    
+            return {
+                "message" : "Mail sended Successfully"
+            }
 
     async def register(self, email:str, password:str, token:str):
 

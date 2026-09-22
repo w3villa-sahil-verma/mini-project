@@ -2,14 +2,18 @@ from typing import Annotated
 
 from fastapi import Request, Depends;
 
-from src.auth.strategies.StandardRegistration import StandardRegistration
+from src.auth.strategies.ABC_Registration import Registration;
+from src.auth.strategies.JwtBasedRegistration import JwtBasedRegistration;
 
 class RegistrationService:
-    def __init__(self, standardStrategy: Annotated[StandardRegistration, Depends(StandardRegistration)]) -> None:
-        self.standardStrategy = standardStrategy;
+    def __init__(
+        self, 
+        strategy: Annotated[Registration, Depends(JwtBasedRegistration)]
+    ) -> None:
+        self.strategy = strategy;
 
-    def standardRegister(self, email: str, password:str, token:str):
-        return self.standardStrategy.register(email, password, token);
+    def register(self, email: str, password:str, token:str):
+        return self.strategy.register(email, password, token);
 
-    def oauthRegister(self):
-        pass;
+    def sendRegistrationLink(self, email: str):
+        return self.strategy.sendRegistrationLink(email);

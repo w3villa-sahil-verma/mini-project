@@ -1,25 +1,22 @@
 from typing import Annotated
 from fastapi import Depends, Request, Response;
 
-from src.auth.services.RegistrationLinkService import RegistrationLinkService
 from src.auth.services.RegistrationService import RegistrationService
 from src.auth.services.AuthenticationService import AuthenticationService;
 
 class AuthController:
     def __init__(
             self, 
-            registrationLinkService: Annotated[RegistrationLinkService, Depends(RegistrationLinkService)],
             registrationService: Annotated[RegistrationService, Depends(RegistrationService)],
             authService: Annotated[AuthenticationService, Depends(AuthenticationService)]
         ):
-        self.registrationLinkService = registrationLinkService;
         self.registrationService = registrationService;
         self.authService = authService;
         
 
     async def getRegistrationMail(self, email:str):
         
-        result =  await self.registrationLinkService.create_registration_link(email)
+        result =  await self.registrationService.sendRegistrationLink(email);
 
         return {
             "message" : "success",
@@ -28,7 +25,7 @@ class AuthController:
 
     async def standardRegister(self, email: str, password:str, token:str):
 
-        result = await self.registrationService.standardRegister(email, password, token);
+        result = await self.registrationService.register(email, password, token);
 
         return {
             "message" : "success",
