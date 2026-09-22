@@ -51,6 +51,7 @@ class JwtBasedRegistration(Registration):
                 "message" : "Mail sended Successfully"
             }
 
+    # TODO : welcome notification AND seperate repository code
     async def register(self, email:str, password:str, token:str):
 
         # verify the token
