@@ -26,25 +26,16 @@ def getRouter()->APIRouter:
         authController: Annotated[AuthController, Depends(AuthController)],
         email: str
     ):
-
         return await authController.getRegistrationMail(email);
 
-    @router.post("/standard-register")
+    @router.post("/standard/register")
     async def standardRegister(
         authController: Annotated[AuthController, Depends(AuthController)],
         data: RequestBody
     ):
         return await authController.standardRegister(email=data.email, password=data.password, token=data.token);
-        
 
-    # TODO : implement later
-    @router.post("/oauth-register")
-    async def oauthRegister(
-        authController: Annotated[AuthController, Depends(AuthController)],
-    ):
-        pass;
-
-    @router.post("/standard-login")
+    @router.post("/standard/login")
     async def standardLogin(
         authController: Annotated[AuthController, Depends(AuthController)],
         body: StandardLoginRequestBody,
@@ -52,6 +43,17 @@ def getRouter()->APIRouter:
     ):
         return await authController.login(email=body.email, password=body.password, response=response);
 
+    @router.get("/oauth/meta")
+    async def oauthMeta(
+        authController: Annotated[AuthController, Depends(AuthController)],
+    ):
+        pass;
+
+    @router.post("/oauth/login")
+    async def oauthLogin(
+        authController: Annotated[AuthController, Depends(AuthController)],
+    ):
+        pass;
 
 
         
