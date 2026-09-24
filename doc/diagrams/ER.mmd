@@ -1,0 +1,79 @@
+erDiagram
+
+%% Entities
+
+USER{
+    int id PK
+
+    string email
+
+    date created_at
+    date updated_at
+}
+
+CREDENTIAL{
+    int id PK
+
+    int user_id FK
+
+    string hash
+
+    date created_at
+    date updated_at
+}
+
+%% Example - Weight Room, Steam Bathroom, Basic Bathroom
+OFFER{
+    int id PK
+    int plan_id FK
+
+    string name
+
+    date created_at
+    date updated_at
+}
+
+%% Example : GOLD, SILVER, BASIC
+PLAN{
+    int id PK
+
+    string name
+}
+
+%% Example : SUPER_ADMIN, MEMBER, ADMIN
+ROLE{
+    int id PK
+
+    string name
+}
+
+%% This is a single entity for which Application create
+%% ORG + SUPER_ADMIN : create simultaniously
+%% SUPER_ADMIN + ADMIN : have power to send links to register MEMBERS + other ADMINS
+ORGANIZATION{}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%% Relationship
+
+USER ||--|| CREDENTIAL : have
+USER ||--|| ROLE : have
+PLAN ||--|{ OFFER : have
