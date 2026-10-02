@@ -5,6 +5,7 @@ erDiagram
 USER{
     int id PK
 
+    int role FK
     string email
 
     date created_at
@@ -17,6 +18,7 @@ CREDENTIAL{
     int user_id FK
 
     string hash
+    enum type
 
     date created_at
     date updated_at
@@ -38,6 +40,8 @@ PLAN{
     int id PK
 
     string name
+    int duration
+    int price
 }
 
 %% Example : SUPER_ADMIN, MEMBER, ADMIN
@@ -50,7 +54,12 @@ ROLE{
 %% This is a single entity for which Application create
 %% ORG + SUPER_ADMIN : create simultaniously
 %% SUPER_ADMIN + ADMIN : have power to send links to register MEMBERS + other ADMINS
-ORGANIZATION{}
+ORGANIZATION{
+    int id
+
+    string name
+
+}
 
 
 
@@ -77,3 +86,6 @@ ORGANIZATION{}
 USER ||--|| CREDENTIAL : have
 USER ||--|| ROLE : have
 PLAN ||--|{ OFFER : have
+ORGANIZATION ||--|{ USER : exists
+ORGANIZATION ||--|{ PLAN : have
+ORGANIZATION ||--|{ OFFER : exists
