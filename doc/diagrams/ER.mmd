@@ -7,6 +7,7 @@ USER{
 
     int role FK
     string email
+    string role
 
     date created_at
     date updated_at
@@ -42,13 +43,6 @@ PLAN{
     string name
     int duration
     int price
-}
-
-%% Example : SUPER_ADMIN, MEMBER, ADMIN
-ROLE{
-    int id PK
-
-    string name
 }
 
 %% This is a single entity for which Application create

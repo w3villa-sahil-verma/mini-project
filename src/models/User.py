@@ -1,10 +1,19 @@
 from datetime import datetime
+from enum import Enum
 
-from sqlalchemy import String, DateTime
+from sqlalchemy import String, DateTime, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database.Base import Base
 
+# -------------------------
+# Enums
+# -------------------------
+
+class USER_ROLE(str, Enum):
+    OWNER = "OWNER"
+    ADMIN = "ADMIN"
+    MEMBER = "MEMBER"
 
 class User(Base):
     __tablename__ = "users"
@@ -16,6 +25,12 @@ class User(Base):
         nullable=False,
         unique=True,
         index=True
+    )
+
+    role: Mapped[USER_ROLE] = mapped_column(
+        SQLEnum(USER_ROLE, name="type"),
+        nullable=False,
+        default=USER_ROLE.OWNER
     )
 
     created_at: Mapped[datetime] = mapped_column(

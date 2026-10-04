@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 
 from src.models.User import User
-from src.models.Account import Account, EmailVerificationStatus
 from src.models.Credential import Credential
 from src.common.token.JwtService import JwtTokenService
 from src.common.token.constants import TOKEN_TYPES;
@@ -69,17 +68,11 @@ class JwtBasedRegistration(Registration):
             # Flush so user.id becomes available
             await self.db.flush()
 
-            account = Account(
-                user_id=user.id,
-                email_verification_status=EmailVerificationStatus.VERIFIED
-            )
-
             credential = Credential(
                 user_id=user.id,
                 hash=HashingService.hash_password(password)
             )
 
-            self.db.add(account)
             self.db.add(credential)
 
         # transaction commits automatically here

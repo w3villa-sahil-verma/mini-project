@@ -48,7 +48,6 @@ class Credential(Base):
         default=CREDENTIAL_TYPES.STANDARD
     )
 
-
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
