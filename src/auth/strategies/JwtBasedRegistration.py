@@ -43,7 +43,7 @@ class JwtBasedRegistration(Registration):
             await self.notificationService.send(Notification(
                 recipient=email,
                 subject="GYM Registration mail",
-                body=f"http://abc.com?email={email}&code={token}"
+                body=f"http://localhost:5173?token={token}"
             ))
     
             return {
