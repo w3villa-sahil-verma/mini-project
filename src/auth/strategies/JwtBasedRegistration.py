@@ -11,7 +11,8 @@ from src.common.token.constants import TOKEN_TYPES;
 from src.common.security.HashingService import HashingService
 from src.common.notification.NotificationService import NotificationService
 from src.common.notification.Notification import Notification;
-from src.auth.strategies.ABC_Registration import Registration;
+from src.common.decorators.EmailCheck import check_email_exists
+from src.auth.strategies.ABC_Registration import RegisterResponse, Registration;
 from src.database.Database import getAsyncDbSession
 
 class JwtBasedRegistration(Registration):
@@ -25,6 +26,7 @@ class JwtBasedRegistration(Registration):
         self.db = db;
         self.notificationService = notification_service;
 
+    @check_email_exists
     async def sendRegistrationLink(self, email: str):
     
             EXP_IN_MIN = 60
@@ -51,7 +53,7 @@ class JwtBasedRegistration(Registration):
             }
 
     # TODO : welcome notification AND seperate repository code
-    async def register(self, email:str, password:str, token:str):
+    async def register(self, email:str, password:str, token:str) -> RegisterResponse:
 
         # verify the token
         payload = self.tokenService.verify(token=token)
