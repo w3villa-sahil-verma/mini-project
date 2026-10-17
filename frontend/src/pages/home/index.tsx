@@ -84,7 +84,7 @@ export function Home() {
         </div>
         {menuOpen && (
           <nav
-            className="absolute inset-x-5 top-[76px] rounded-2xl border border-[#c9d9cc] bg-[#f7f8f5] p-3 shadow-xl dark:border-[#2a4b44] dark:bg-[#163832] md:hidden"
+            className="absolute inset-x-5 top-19 rounded-2xl border border-[#c9d9cc] bg-[#f7f8f5] p-3 shadow-xl dark:border-[#2a4b44] dark:bg-[#163832] md:hidden"
             aria-label="Mobile navigation"
           >
             <a
@@ -132,27 +132,27 @@ export function Home() {
             calm, capable workspace—so you can spend less time managing and more
             time making a difference.
           </p>
-          <div className="mt-9 flex flex-wrap items-center gap-3">
+          <div className="mt-9 flex items-center gap-1">
             <Link
               to="/register"
               className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap"
             >
               <Button
                 size="lg"
-                className="h-13 min-w-[212px] rounded-full bg-[#d99d31] px-6 text-[#173b35] shadow-[0_8px_20px_rgba(217,157,49,0.2)] transition-colors hover:bg-[#b8791f] hover:text-white focus-visible:ring-[#d99d31]"
+                className="h-13 min-w-53 rounded-full bg-[#d99d31] px-6 text-[#173b35] shadow-[0_8px_20px_rgba(217,157,49,0.2)] transition-colors hover:bg-[#b8791f] hover:text-white focus-visible:ring-[#d99d31]"
               >
                 <span>Register your organization</span>
                 <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
               </Button>
             </Link>
             <Link
-              to="/sign-in"
+              to="/login"
               className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap"
             >
               <Button
                 size="lg"
                 variant="outline"
-                className="h-13 min-w-[142px] rounded-full border-[#b8cbc0] bg-transparent px-6 text-[#173b35] transition-colors hover:border-[#173b35] hover:bg-[#173b35] hover:text-white focus-visible:ring-[#173b35] dark:border-[#b8cbc0] dark:text-[#eef4ed] dark:hover:border-[#dbe9df] dark:hover:bg-[#dbe9df] dark:hover:text-[#173b35]"
+                className="h-13 min-w-35.5 rounded-full border-[#b8cbc0] bg-transparent px-6 text-[#173b35] transition-colors hover:border-[#173b35] hover:bg-[#173b35] hover:text-white focus-visible:ring-[#173b35] dark:border-[#b8cbc0] dark:text-[#eef4ed] dark:hover:border-[#dbe9df] dark:hover:bg-[#dbe9df] dark:hover:text-[#173b35]"
               >
                 <CircleUserRound
                   className="size-4 shrink-0"
@@ -178,7 +178,7 @@ export function Home() {
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-[520px] sm:max-w-[520px] lg:ml-auto">
+        <div className="relative mx-auto w-full max-w-130 sm:max-w-130 lg:ml-auto">
           <div className="absolute -right-16 -top-12 size-56 rounded-full bg-[#e3eddf] blur-3xl" />
           <div className="absolute -bottom-12 -left-12 size-48 rounded-full bg-[#f4dfb1] blur-3xl" />
           <div className="relative rotate-2 rounded-[28px] border border-[#d7e2d6] bg-white p-3 shadow-[0_24px_70px_rgba(34,73,61,0.13)]">
@@ -311,8 +311,8 @@ export function Home() {
             href="#support"
             className="font-medium text-[#173b35] hover:underline"
           >
-            Talk to our team{" "}
-            <ChevronDown className="ml-1 inline size-3 rotate-[-90deg]" />
+            Talk to our team
+            <ChevronDown className="ml-1 inline size-3 -rotate-90" />
           </a>
           <a
             href="/register"

@@ -34,14 +34,11 @@ class AuthController:
             "message" : "User Registration Successful",
             "data" : result
         }
-
+    
+    @set_auth_cookie
     async def login(self, email: str, password:str, response: Response):
 
         result = await self.authService.authenticate(email, password);
-
-        # TODO : http-only-cookie
-        # set access_token in cookie
-        response.set_cookie(key="access_token", value=result)
 
         return {
             "message" : "User Login Successful",
@@ -70,9 +67,19 @@ class AuthController:
             "data" : result
         }
     
-    async def logout(self):
+    async def logout(self, response: Response):
 
         # remove accesstoken from http-only-cookie
+        response.delete_cookie(
+            key="access_token",
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            path="/",
+        )
 
-        pass;
+        return {
+            "message": "Logout Successfull",
+            "data": None
+        };
         

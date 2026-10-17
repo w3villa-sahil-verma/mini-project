@@ -17,6 +17,7 @@ import { handleFetch } from "@/hooks/useFetch";
 import type { CommonResponse } from "@/types/common/request";
 import { logger } from "@/utils/logger";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
 type SignupFormProps = React.ComponentProps<typeof Card> & {
@@ -39,6 +40,8 @@ type RequestPayload = {
 };
 
 export function SignupForm({ token, ...props }: SignupFormProps) {
+  const navigate = useNavigate();
+
   const [requestPayload, setRequestPayload] = useState<RequestPayload | null>(
     null,
   );
@@ -79,6 +82,7 @@ export function SignupForm({ token, ...props }: SignupFormProps) {
       (resp) => {
         logger.debug("Data received:", resp);
         toast.success(resp.message)
+        navigate("/auth/dashboard")
       },
       (error) => {
         logger.error("Error occurred:", error);

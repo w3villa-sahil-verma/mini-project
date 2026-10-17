@@ -56,6 +56,15 @@ def getRouter()->APIRouter:
     ):
         pass;
 
+    @router.get("/logout")
+    async def logout(
+        response: Response,
+        authController: Annotated[AuthController, Depends(AuthController)],
+    ):
+        return await authController.logout(response=response);
+
+        
+
 
         
     return router;

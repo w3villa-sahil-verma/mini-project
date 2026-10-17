@@ -1,7 +1,7 @@
 from typing import Annotated
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +10,7 @@ from src.common.token.JwtService import JwtTokenService
 from src.common.token.constants import TOKEN_TYPES
 from src.models.User import User
 from src.models.Credential import Credential
-from src.auth.strategies.ABC_AuthStrategy import AuthStrategy;
+from src.auth.strategies.ABC_AuthStrategy import AuthStrategy, LoginResponse;
 from src.database.Database import getAsyncDbSession
 
 class StandardAuthStrategy(AuthStrategy):
@@ -22,7 +22,7 @@ class StandardAuthStrategy(AuthStrategy):
         self.db = db
         self.tokenService = tokenService
 
-    async def authenticate(self, email: str, password: str):
+    async def authenticate(self, email: str, password: str)->LoginResponse:
 
         # 1. Get user by email
         result = await self.db.execute(
@@ -32,7 +32,10 @@ class StandardAuthStrategy(AuthStrategy):
         user = result.scalar_one_or_none()
 
         if user is None:
-            raise ValueError("Invalid email or password")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password",
+            )
 
         # 2. Get credential by user.id
         result = await self.db.execute(
@@ -42,7 +45,10 @@ class StandardAuthStrategy(AuthStrategy):
         credential = result.scalar_one_or_none()
 
         if credential is None:
-            raise ValueError("Invalid email or password")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password",
+            )
 
         # 3. Verify password
         password_valid = HashingService.verify_password(
@@ -51,7 +57,10 @@ class StandardAuthStrategy(AuthStrategy):
         )
 
         if not password_valid:
-            raise ValueError("Invalid email or password")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password",
+            )
 
         # 4. Create access token
         now = datetime.now(timezone.utc)
@@ -70,7 +79,9 @@ class StandardAuthStrategy(AuthStrategy):
         )
 
         # 5. Send access token
-        return access_token
+        return {
+            "access_token": access_token,
+        }
 
     async def logout(self):
         # TODO

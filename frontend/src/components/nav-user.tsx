@@ -1,8 +1,4 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,25 +7,53 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { IconDotsVertical, IconUserCircle, IconCreditCard, IconNotification, IconLogout } from "@tabler/icons-react"
+} from "@/components/ui/sidebar";
+import { handleFetch } from "@/hooks/useFetch";
+import type { CommonResponse } from "@/types/common/request";
+import { logger } from "@/utils/logger";
+import {
+  IconDotsVertical,
+  IconUserCircle,
+  IconCreditCard,
+  IconNotification,
+  IconLogout,
+} from "@tabler/icons-react";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
 
 export function NavUser({
   user,
 }: {
   user: {
-    name: string
-    email: string
-    avatar: string
-  }
+    name: string;
+    email: string;
+    avatar: string;
+  };
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
+  const Navigate = useNavigate();
+
+  const handleLogoutClick = async () => {
+    const toastId = toast.loading("Logging out...");
+    await handleFetch<CommonResponse<any>>(
+      `/api/v1/auth/logout`,
+      (resp) => {
+        logger.debug("Data received:", resp);
+        toast.success(resp.message, { id: toastId });
+        Navigate("/");
+      },
+      (error) => {
+        logger.error("Error occurred:", error);
+        toast.error(error.message, { id: toastId });
+      },
+    );
+  };
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -76,30 +100,26 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <IconUserCircle
-                />
+                <IconUserCircle />
                 Account
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <IconCreditCard
-                />
+                <IconCreditCard />
                 Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <IconNotification
-                />
+                <IconNotification />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <IconLogout
-              />
+            <DropdownMenuItem onClick={handleLogoutClick}>
+              <IconLogout />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }
