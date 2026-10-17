@@ -26,7 +26,7 @@ class AuthController:
         }
 
     @set_auth_cookie
-    async def standardRegister(self, email: str, password:str, token:str, response: Response):
+    async def standardRegister(self, email: str, password:str, token:str, response: Response): # response used by decorator
 
         result = await self.registrationService.register(email, password, token);
 

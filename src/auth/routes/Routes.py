@@ -30,10 +30,11 @@ def getRouter()->APIRouter:
 
     @router.post("/standard/register")
     async def standardRegister(
+        response: Response,
         authController: Annotated[AuthController, Depends(AuthController)],
         data: RequestBody
     ):
-        return await authController.standardRegister(email=data.email, password=data.password, token=data.token);
+        return await authController.standardRegister(email=data.email, password=data.password, token=data.token, response=response);
 
     @router.post("/standard/login")
     async def standardLogin(
