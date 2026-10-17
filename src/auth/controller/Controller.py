@@ -21,7 +21,7 @@ class AuthController:
         result =  await self.registrationService.sendRegistrationLink(email);
 
         return {
-            "message" : "success",
+            "message" : f"Mail successfully send at {email}",
             "data" : result
         }
 
@@ -31,7 +31,7 @@ class AuthController:
         result = await self.registrationService.register(email, password, token);
 
         return {
-            "message" : "success",
+            "message" : "User Registration Successful",
             "data" : result
         }
 
@@ -44,7 +44,7 @@ class AuthController:
         response.set_cookie(key="access_token", value=result)
 
         return {
-            "message" : "success",
+            "message" : "User Login Successful",
             "data" : {
                 "access_token": result
             }

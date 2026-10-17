@@ -8,13 +8,10 @@ type HandleRequestError = (error: Error) => void;
 export type FetchConfig = {
   baseUrl?: string;
   headers?: HeadersInit;
-};
+} & RequestInit;
 
 const defaultConfig: FetchConfig = {
   baseUrl: "",
-  headers: {
-    "Content-Type": "application/json",
-  },
 };
 
 function buildUrl(input: RequestInfo, baseUrl?: string): RequestInfo {
@@ -30,6 +27,7 @@ function buildInit(
   config?: FetchConfig,
 ): RequestInit {
   return {
+    ...config,
     ...init,
     headers: {
       ...config?.headers,
@@ -46,10 +44,10 @@ export async function handleFetch<T>(
   config: FetchConfig = {...defaultConfig, ...API_CONFIG},
 ) {
   try {
-    logger.debug("Invoke fetch");
-
     const url = buildUrl(input, config.baseUrl);
     const requestInit = buildInit(init, config);
+
+    logger.debug(requestInit)
 
     const res = await fetch(url, requestInit);
 

@@ -15,6 +15,9 @@ import { IconLayoutRows } from "@tabler/icons-react";
 import { handleFetch } from "@/hooks/useFetch";
 import { RegistrationLinkSentDialog } from "./dialogs/registration-link-send-dialog";
 import { useState } from "react";
+import { logger } from "@/utils/logger";
+import { toast } from "sonner";
+import type { CommonResponse } from "@/types/common/request";
 
 export function SignupEmailForm({
   className,
@@ -23,21 +26,26 @@ export function SignupEmailForm({
   const [openRegistrationLinkSentDialog, setOpenRegistrationLinkSentDialog] =
     useState<boolean>(false);
   const [email, setEmail] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleClick(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleClick(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (email) {
-      handleFetch(
+      setLoading(true)
+      await handleFetch<CommonResponse<any>>(
         `/api/v1/auth/registeration-mail?email=${encodeURIComponent(email)}`,
-        (data) => {
-          console.log("Data received:", data);
+        (resp) => {
+          logger.debug("Data received:", resp)
+          toast.success(resp.message)
           setOpenRegistrationLinkSentDialog(true);
         },
         (error) => {
-          console.error("Error occurred:", error);
+          logger.error("Error occurred:", error);
+          toast.error(error.message)
         },
       );
+      setLoading(false)
     }
   }
 
@@ -73,7 +81,7 @@ export function SignupEmailForm({
               />
             </Field>
             <Field>
-              <Button type="submit">Create Account</Button>
+              <Button type="submit" disabled={loading}>Create Account</Button>
             </Field>
             <FieldSeparator>Or</FieldSeparator>
             <Field className="grid gap-4 sm:grid-cols-2">
