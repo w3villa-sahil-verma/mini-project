@@ -1,4 +1,8 @@
 from abc import ABC, abstractmethod;
+from typing import TypedDict
+
+class RegisterResponse(TypedDict):
+    access_token: str
 
 class Registration:
     """Interface for Registation service"""
@@ -9,6 +13,6 @@ class Registration:
         raise NotImplementedError
 
     @abstractmethod
-    async def register(self, email:str, password:str, token:str):
+    async def register(self, email:str, password:str, token:str) -> RegisterResponse:
         """Register user after verify the token"""
         raise NotImplementedError
