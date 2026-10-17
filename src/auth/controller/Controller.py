@@ -3,6 +3,8 @@ from fastapi import Depends, Request, Response;
 
 from src.auth.services.RegistrationService import RegistrationService
 from src.auth.services.AuthenticationService import AuthenticationService;
+from src.common.decorators.SetAuthCookie import set_auth_cookie
+
 
 class AuthController:
     def __init__(
@@ -23,7 +25,8 @@ class AuthController:
             "data" : result
         }
 
-    async def standardRegister(self, email: str, password:str, token:str):
+    @set_auth_cookie
+    async def standardRegister(self, email: str, password:str, token:str, response: Response):
 
         result = await self.registrationService.register(email, password, token);
 
