@@ -6,6 +6,7 @@ import { Login } from "./pages/login";
 import { Register } from "./pages/register";
 import { Dashboard } from "./pages/dashboard";
 import { PrimaryLayout } from "./layouts/primary";
+import { Plan } from "./pages/plan";
 
 export const router = createBrowserRouter([
   {
@@ -13,13 +14,10 @@ export const router = createBrowserRouter([
     // Component: Root,
     children: [
       { index: true, Component: Home },
-      { path: "profile", Component: Profile },
-      { path: "pricing", Component: Pricing },
       { path: "register", Component: Register },
       { path: "login", Component: Login },
-      { path: "dashboard", Component: Dashboard },
       {
-        path: "auth",
+        path: "user",
         Component: PrimaryLayout,
         children: [
           {
@@ -29,6 +27,36 @@ export const router = createBrowserRouter([
           {
             path: "dashboard",
             Component: Dashboard,
+          },
+          {
+            path: "profile",
+            Component: Dashboard,
+          },
+          {
+            path: "plans",
+            Component: Dashboard,
+          },
+        ],
+      },
+      {
+        path: "admin",
+        Component: PrimaryLayout,
+        children: [
+          {
+            index: true,
+            loader: () => redirect("dashboard"),
+          },
+          {
+            path: "dashboard",
+            Component: Dashboard,
+          },
+          {
+            path: "users",
+            Component: Dashboard,
+          },
+          {
+            path: "plans",
+            Component: Plan,
           },
         ],
       },

@@ -2,7 +2,7 @@
 from fastapi import APIRouter;
 
 from src.auth.routes.Routes import getRouter as authRouter;
-from src.organization.routes.Routes import getRouter as orgRouter;
+from src.plan.routes.Routes import getRouter as planRouter;
 
 
 router: APIRouter = APIRouter(
@@ -10,10 +10,15 @@ router: APIRouter = APIRouter(
     responses={404: {"description": "Not found"}},  
 )
 
+admin_router: APIRouter = APIRouter(
+    prefix="/admin",
+    responses={404: {"description": "Not found"}}
+)
 
 # include other routes below
+admin_router.include_router(planRouter());
 
 router.include_router(authRouter());
-router.include_router(orgRouter());
+router.include_router(admin_router);
 
 # router.include_router(other_router);

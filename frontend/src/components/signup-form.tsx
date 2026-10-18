@@ -82,7 +82,7 @@ export function SignupForm({ token, ...props }: SignupFormProps) {
       (resp) => {
         logger.debug("Data received:", resp);
         toast.success(resp.message)
-        navigate("/auth/dashboard")
+        navigate("/user/dashboard")
       },
       (error) => {
         logger.error("Error occurred:", error);

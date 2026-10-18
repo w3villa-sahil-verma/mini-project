@@ -1,85 +1,83 @@
+
 erDiagram
 
-%% Entities
+    USER {
+        int id PK
+        string email UK
+        string role "user or admin"
+        boolean email_verified
+        string account_status
+        datetime created_at
+        datetime updated_at
+    }
 
-USER{
-    int id PK
+    USER_PROFILE {
+        int id PK
+        int user_id FK, UK
+        string name
+        string profile_picture_url
+        string address
+        decimal latitude
+        decimal longitude
+        datetime created_at
+        datetime updated_at
+    }
 
-    int role FK
-    string email
-    string role
+    CREDENTIAL {
+        int id PK
+        int user_id FK
+        string password_hash
+        string type "password, google, facebook, standard"
+        datetime created_at
+        datetime updated_at
+    }
 
-    date created_at
-    date updated_at
-}
+    PLAN {
+        int id PK
+        string name "Free, Silver, Gold"
+        int duration_hours "1, 6, or 12"
+        int price_minor
+        string currency
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
 
-CREDENTIAL{
-    int id PK
+    SUBSCRIPTION {
+        int id PK
+        int user_id FK
+        int plan_id FK
+        string status "pending, active, expired, cancelled"
+        datetime starts_at
+        datetime expires_at
+        datetime created_at
+        datetime updated_at
+    }
 
-    int user_id FK
+    PAYMENT {
+        int id PK
+        int user_id FK
+        int subscription_id FK
+        string provider "Stripe"
+        string provider_payment_id
+        int amount_minor
+        string currency
+        string status "pending, succeeded, failed"
+        datetime created_at
+        datetime updated_at
+    }
 
-    string hash
-    enum type
+    PAYMENT_WEBHOOK_EVENT {
+        int id PK
+        string provider_event_id UK
+        string event_type
+        boolean processed
+        datetime created_at
+    }
 
-    date created_at
-    date updated_at
-}
-
-%% Example - Weight Room, Steam Bathroom, Basic Bathroom
-OFFER{
-    int id PK
-    int plan_id FK
-
-    string name
-
-    date created_at
-    date updated_at
-}
-
-%% Example : GOLD, SILVER, BASIC
-PLAN{
-    int id PK
-
-    string name
-    int duration
-    int price
-}
-
-%% This is a single entity for which Application create
-%% ORG + SUPER_ADMIN : create simultaniously
-%% SUPER_ADMIN + ADMIN : have power to send links to register MEMBERS + other ADMINS
-ORGANIZATION{
-    int id
-
-    string name
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%% Relationship
-
-USER ||--|| CREDENTIAL : have
-USER ||--|| ROLE : have
-PLAN ||--|{ OFFER : have
-ORGANIZATION ||--|{ USER : exists
-ORGANIZATION ||--|{ PLAN : have
-ORGANIZATION ||--|{ OFFER : exists
+    USER ||--o| USER_PROFILE : has
+    USER ||--o{ CREDENTIAL : authenticates_with
+    USER ||--o{ SUBSCRIPTION : owns
+    PLAN ||--o{ SUBSCRIPTION : selected_for
+    USER ||--o{ PAYMENT : makes
+    SUBSCRIPTION ||--o{ PAYMENT : has

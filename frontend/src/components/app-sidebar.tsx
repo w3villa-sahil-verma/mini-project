@@ -1,6 +1,5 @@
 import * as React from "react";
 
-import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
@@ -41,11 +40,11 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/auth/dashboard",
+      url: "/admin/dashboard",
       icon: <IconDashboard />,
     },
     {
-      title: "Lifecycle",
+      title: "Page Hosting",
       url: "#",
       icon: <IconListDetails />,
     },
@@ -55,13 +54,13 @@ const data = {
       icon: <IconChartBar />,
     },
     {
-      title: "Projects",
-      url: "#",
+      title: "Plans",
+      url: "/admin/plans",
       icon: <IconFolder />,
     },
     {
       title: "Members",
-      url: "/auth/members",
+      url: "/admin/members",
       icon: <IconUsers />,
     },
   ],
@@ -167,7 +166,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

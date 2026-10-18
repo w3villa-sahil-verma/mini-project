@@ -408,7 +408,7 @@ export function DataTable({
       className="w-full flex-col justify-start gap-6"
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
-        <Label htmlFor="view-selector" className="sr-only">
+        <Label htmlFor="view-selectorDashboard" className="sr-only">
           View
         </Label>
         <Select

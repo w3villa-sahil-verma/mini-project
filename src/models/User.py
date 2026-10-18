@@ -11,9 +11,8 @@ from src.database.Base import Base
 # -------------------------
 
 class USER_ROLE(str, Enum):
-    OWNER = "OWNER"
     ADMIN = "ADMIN"
-    MEMBER = "MEMBER"
+    USER = "USER"
 
 class User(Base):
     __tablename__ = "users"
@@ -30,7 +29,7 @@ class User(Base):
     role: Mapped[USER_ROLE] = mapped_column(
         SQLEnum(USER_ROLE, name="type"),
         nullable=False,
-        default=USER_ROLE.OWNER
+        default=USER_ROLE.USER
     )
 
     created_at: Mapped[datetime] = mapped_column(
