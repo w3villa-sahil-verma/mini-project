@@ -3,23 +3,6 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 
 from src.user.controller.Controller import UserController
-from src.middlewares.authorization import require_access_token
-
-class PlanCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=30)
-    duration_hours: int = Field(gt=0)
-    price_minor: int = Field(ge=0)
-    currency: str = Field(min_length=3, max_length=3)
-
-class PlanUpdate(PlanCreate):
-    is_active: bool
-
-class PlanPatch(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=30)
-    duration_hours: int | None = Field(default=None, gt=0)
-    price_minor: int | None = Field(default=None, ge=0)
-    currency: str | None = Field(default=None, min_length=3, max_length=3)
-    is_active: bool | None = None
 
 def getRouter()->APIRouter:
 
@@ -31,8 +14,7 @@ def getRouter()->APIRouter:
 
     @router.get("")
     async def getAll(
-        controller: Annotated[UserController, Depends(UserController)],
-        current_user: Annotated[dict, Depends(require_access_token)]
+        controller: Annotated[UserController, Depends(UserController)]
     ):
         return await controller.get_all()
 

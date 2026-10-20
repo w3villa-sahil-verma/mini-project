@@ -24,9 +24,6 @@ def require_access_token(
         "role": payload.get("role"),
     }
 
-
-
-
 def require_role(required_role: str):
     def role_checker(
         current_user: Annotated[dict, Depends(require_access_token)],
