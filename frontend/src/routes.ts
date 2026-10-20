@@ -7,6 +7,7 @@ import { Register } from "./pages/register";
 import { Dashboard } from "./pages/dashboard";
 import { PrimaryLayout } from "./layouts/primary";
 import { Plan } from "./pages/plan";
+import { Users } from "./pages/user/users.page";
 
 export const router = createBrowserRouter([
   {
@@ -52,7 +53,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "users",
-            Component: Dashboard,
+            Component: Users,
           },
           {
             path: "plans",

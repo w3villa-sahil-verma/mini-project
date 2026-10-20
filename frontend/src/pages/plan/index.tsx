@@ -4,7 +4,7 @@ export const Plan = () => {
   return (
     <>
       <div className="p-4">
-        <PlansTable data={[]} />
+        <PlansTable />
       </div>
     </>
   );

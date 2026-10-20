@@ -22,7 +22,7 @@ class StandardAuthStrategy(AuthStrategy):
         self.db = db
         self.tokenService = tokenService
 
-    async def authenticate(self, email: str, password: str)->LoginResponse:
+    async def authenticate(self, email: str, password: str)->str:
 
         # 1. Get user by email
         result = await self.db.execute(
@@ -69,6 +69,7 @@ class StandardAuthStrategy(AuthStrategy):
 
         accessTokenPayload = {
             "user_id": user.id,
+            "role":user.role,
             "type": TOKEN_TYPES.ACCESS,
             "exp": now + timedelta(minutes=EXP_IN_MIN),
             "iat": now,
@@ -79,9 +80,7 @@ class StandardAuthStrategy(AuthStrategy):
         )
 
         # 5. Send access token
-        return {
-            "access_token": access_token,
-        }
+        return access_token
 
     async def logout(self):
         # TODO

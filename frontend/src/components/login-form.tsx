@@ -48,7 +48,7 @@ export function LoginForm({
       (resp) => {
         logger.debug("Data received:", resp);
         toast.success(resp.message);
-        navigate("/auth/dashboard");
+        navigate("/admin/dashboard");
       },
       (error) => {
         logger.error("Error occurred:", error);

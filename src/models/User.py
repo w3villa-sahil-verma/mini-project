@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import String, DateTime, Enum as SQLEnum
+from sqlalchemy import String, DateTime, Enum as SQLEnum, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database.Base import Base
@@ -32,6 +32,12 @@ class User(Base):
         default=USER_ROLE.USER
     )
 
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
@@ -50,6 +56,7 @@ class User(Base):
             f"User("
             f"id={self.id!r}, "
             f"email={self.email!r}, "
+            f"is_deleted={self.is_deleted!r}"
             f"created_at={self.created_at!r}, "
             f"updated_at={self.updated_at!r}"
             f")"

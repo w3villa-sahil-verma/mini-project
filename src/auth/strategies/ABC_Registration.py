@@ -13,6 +13,6 @@ class Registration:
         raise NotImplementedError
 
     @abstractmethod
-    async def register(self, email:str, password:str, token:str) -> RegisterResponse:
+    async def register(self, email:str, password:str, token:str) -> str:
         """Register user after verify the token"""
         raise NotImplementedError

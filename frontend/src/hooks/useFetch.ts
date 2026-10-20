@@ -1,6 +1,6 @@
 import { API_CONFIG } from "@/config/api.config";
 import { logger } from "@/utils/logger";
-import React from "react";
+import React, { useState } from "react";
 
 type HandleRequestData<T> = (payload: T) => void;
 type HandleRequestError = (error: Error) => void;
@@ -22,10 +22,7 @@ function buildUrl(input: RequestInfo, baseUrl?: string): RequestInfo {
   return `${baseUrl}${input}`;
 }
 
-function buildInit(
-  init?: RequestInit,
-  config?: FetchConfig,
-): RequestInit {
+function buildInit(init?: RequestInit, config?: FetchConfig): RequestInit {
   return {
     ...config,
     ...init,
@@ -41,13 +38,11 @@ export async function handleFetch<T>(
   onData?: HandleRequestData<T>,
   onError?: HandleRequestError,
   init?: RequestInit,
-  config: FetchConfig = {...defaultConfig, ...API_CONFIG},
+  config: FetchConfig = { ...defaultConfig, ...API_CONFIG },
 ) {
   try {
     const url = buildUrl(input, config.baseUrl);
     const requestInit = buildInit(init, config);
-
-    logger.debug(requestInit)
 
     const res = await fetch(url, requestInit);
 
@@ -69,11 +64,19 @@ export function useFetch<T>(
   input: RequestInfo,
   onData?: HandleRequestData<T>,
   onError?: HandleRequestError,
-  init?: RequestInit,
   dependencies?: React.DependencyList,
-  config: FetchConfig = defaultConfig,
+  init?: RequestInit,
+  config: FetchConfig = {...defaultConfig, ...API_CONFIG},
 ) {
+  const [loading, setLoading] = useState(false);
+
   React.useEffect(() => {
-    handleFetch(input, onData, onError, init, config);
+    (async () => {
+      setLoading(true);
+      await handleFetch(input, onData, onError, init, config);
+      setLoading(false)
+    })();
   }, dependencies);
+
+  return [loading];
 }

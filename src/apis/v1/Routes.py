@@ -3,6 +3,7 @@ from fastapi import APIRouter;
 
 from src.auth.routes.Routes import getRouter as authRouter;
 from src.plan.routes.Routes import getRouter as planRouter;
+from src.user.routes.Routes import getRouter as userRouter;
 
 
 router: APIRouter = APIRouter(
@@ -17,6 +18,7 @@ admin_router: APIRouter = APIRouter(
 
 # include other routes below
 admin_router.include_router(planRouter());
+admin_router.include_router(userRouter());
 
 router.include_router(authRouter());
 router.include_router(admin_router);

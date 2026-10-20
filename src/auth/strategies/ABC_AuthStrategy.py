@@ -10,7 +10,7 @@ class AuthStrategy(ABC):
     #TODO : Registration Link merge here
 
     @abstractmethod
-    async def authenticate(self, email: str, password: str) -> LoginResponse:
+    async def authenticate(self, email: str, password: str) -> str:
         """Accept Provider's AccessToken and authenticate user"""
         raise NotImplementedError
 

@@ -19,9 +19,6 @@ import type { CommonResponse } from "@/types/common/request";
 import { logger } from "@/utils/logger";
 import {
   IconDotsVertical,
-  IconUserCircle,
-  IconCreditCard,
-  IconNotification,
   IconLogout,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
@@ -96,21 +93,6 @@ export function NavUser({
                   </div>
                 </div>
               </DropdownMenuLabel>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogoutClick}>
