@@ -1,12 +1,11 @@
 
 from fastapi import APIRouter, Depends;
-from typing import Annotated
 
 
 from src.auth.routes.Routes import getRouter as authRouter;
 from src.plan.routes.Routes import getRouter as planRouter;
 from src.user.routes.Routes import getRouter as userRouter;
-from src.middlewares.authorization import require_access_token, require_role
+from src.middlewares.authorization import require_role
 from src.models.User import USER_ROLE
 
 router: APIRouter = APIRouter(

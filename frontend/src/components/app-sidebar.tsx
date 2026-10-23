@@ -34,14 +34,9 @@ const data = {
       icon: <IconDashboard />,
     },
     {
-      title: "Page Hosting",
-      url: "#",
+      title: "Profile",
+      url: "/admin/profile",
       icon: <IconListDetails />,
-    },
-    {
-      title: "Analytics",
-      url: "#",
-      icon: <IconChartBar />,
     },
     {
       title: "Plans",

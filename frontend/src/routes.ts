@@ -1,13 +1,12 @@
 import { createBrowserRouter, redirect } from "react-router";
 import { Home } from "./pages/home";
-import { Pricing } from "./pages/pricing";
-import { Profile } from "./pages/profile";
 import { Login } from "./pages/login";
 import { Register } from "./pages/register";
 import { Dashboard } from "./pages/dashboard";
 import { PrimaryLayout } from "./layouts/primary";
 import { Plan } from "./pages/plan";
 import { Users } from "./pages/user/users.page";
+import Pricing from "./components/shadcn-space/blocks/pricing-02/pricing";
 
 export const router = createBrowserRouter([
   {
@@ -35,7 +34,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "plans",
-            Component: Dashboard,
+            Component: Pricing,
           },
         ],
       },
@@ -49,6 +48,10 @@ export const router = createBrowserRouter([
           },
           {
             path: "dashboard",
+            Component: Dashboard,
+          },
+          {
+            path: "profile",
             Component: Dashboard,
           },
           {
