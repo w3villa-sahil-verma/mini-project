@@ -16,10 +16,11 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 import { handleFetch } from "@/hooks/useFetch";
+import { useRevalidator } from "react-router";
 import type { CommonResponse } from "@/types/common/request";
 
 type RequestPayload = {
@@ -32,6 +33,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const navigate = useNavigate();
+  const revalidate = useRevalidator();
 
   const [requestPayload, setRequestPayload] = useState<RequestPayload>({
     email: "",
@@ -59,6 +61,7 @@ export function LoginForm({
         body: JSON.stringify(requestPayload),
       },
     );
+    await revalidate.revalidate();
     setLoading(false);
   };
 

@@ -23,6 +23,8 @@ import {
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { useRevalidator } from "react-router";
+
 
 export function NavUser({
   user,
@@ -35,6 +37,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const Navigate = useNavigate();
+  const revalidate = useRevalidator();
 
   const handleLogoutClick = async () => {
     const toastId = toast.loading("Logging out...");
@@ -50,6 +53,8 @@ export function NavUser({
         toast.error(error.message, { id: toastId });
       },
     );
+
+    await revalidate.revalidate();
   };
   return (
     <SidebarMenu>

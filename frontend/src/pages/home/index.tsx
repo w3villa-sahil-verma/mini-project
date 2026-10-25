@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router";
+import { useRouteLoaderData } from "react-router";
+import type { User, USER_ROLE } from "@/types/common/user";
 
 const features = [
   {
@@ -36,6 +38,7 @@ const features = [
 
 export function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user } = useRouteLoaderData<{ user: User | null }>("root")!;
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#f7f8f5] text-[#173b35] dark:bg-[#102c28] dark:text-[#eef4ed]">
@@ -132,36 +135,7 @@ export function Home() {
             calm, capable workspace—so you can spend less time managing and more
             time making a difference.
           </p>
-          <div className="mt-9 flex items-center gap-1">
-            <Link
-              to="/register"
-              className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap"
-            >
-              <Button
-                size="lg"
-                className="h-13 min-w-53 rounded-full bg-[#d99d31] px-6 text-[#173b35] shadow-[0_8px_20px_rgba(217,157,49,0.2)] transition-colors hover:bg-[#b8791f] hover:text-white focus-visible:ring-[#d99d31]"
-              >
-                <span>Register your organization</span>
-                <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
-              </Button>
-            </Link>
-            <Link
-              to="/login"
-              className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap"
-            >
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-13 min-w-35.5 rounded-full border-[#b8cbc0] bg-transparent px-6 text-[#173b35] transition-colors hover:border-[#173b35] hover:bg-[#173b35] hover:text-white focus-visible:ring-[#173b35] dark:border-[#b8cbc0] dark:text-[#eef4ed] dark:hover:border-[#dbe9df] dark:hover:bg-[#dbe9df] dark:hover:text-[#173b35]"
-              >
-                <CircleUserRound
-                  className="size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <span>Sign in to ABC</span>
-              </Button>
-            </Link>
-          </div>
+          <SignActions role={user?.role} />
           <div className="mt-8 flex items-center gap-3 text-sm text-[#52706a]">
             <div className="flex -space-x-2" aria-hidden="true">
               <span className="flex size-8 items-center justify-center rounded-full border-2 border-[#f7f8f5] bg-[#d6a18b] text-[10px] font-bold text-white">
@@ -335,5 +309,56 @@ export function Home() {
         </div>
       </footer>
     </main>
+  );
+}
+
+function SignActions({ role }: { role?: USER_ROLE }) {
+  return (
+    <div className="mt-9 flex items-center gap-1">
+      {!role && (
+        <Link
+          to="/register"
+          className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap"
+        >
+          <Button
+            size="lg"
+            className="h-13 min-w-53 rounded-full bg-[#d99d31] px-6 text-[#173b35] shadow-[0_8px_20px_rgba(217,157,49,0.2)] transition-colors hover:bg-[#b8791f] hover:text-white focus-visible:ring-[#d99d31]"
+          >
+            <span>Register your organization</span>
+            <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
+          </Button>
+        </Link>
+      )}
+      {!role && (
+        <Link
+          to="/login"
+          className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap"
+        >
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-13 min-w-35.5 rounded-full border-[#b8cbc0] bg-transparent px-6 text-[#173b35] transition-colors hover:border-[#173b35] hover:bg-[#173b35] hover:text-white focus-visible:ring-[#173b35] dark:border-[#b8cbc0] dark:text-[#eef4ed] dark:hover:border-[#dbe9df] dark:hover:bg-[#dbe9df] dark:hover:text-[#173b35]"
+          >
+            <CircleUserRound className="size-4 shrink-0" aria-hidden="true" />
+            <span>Sign in to ABC</span>
+          </Button>
+        </Link>
+      )}
+      {role && (
+        <Link
+          to={`${role.toLowerCase()}/dashboard`}
+          className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap"
+        >
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-13 min-w-35.5 rounded-full border-[#b8cbc0] bg-transparent px-6 text-[#173b35] transition-colors hover:border-[#173b35] hover:bg-[#173b35] hover:text-white focus-visible:ring-[#173b35] dark:border-[#b8cbc0] dark:text-[#eef4ed] dark:hover:border-[#dbe9df] dark:hover:bg-[#dbe9df] dark:hover:text-[#173b35]"
+          >
+            <CircleUserRound className="size-4 shrink-0" aria-hidden="true" />
+            <span>Continue </span>
+          </Button>
+        </Link>
+      )}
+    </div>
   );
 }

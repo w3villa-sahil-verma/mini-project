@@ -19,10 +19,7 @@ def require_access_token(
 
     payload = tokenService.verify(token=token)
 
-    return {
-        "user_id": payload.get("user_id"),
-        "role": payload.get("role"),
-    }
+    return payload
 
 def require_role(required_role: str):
     def role_checker(

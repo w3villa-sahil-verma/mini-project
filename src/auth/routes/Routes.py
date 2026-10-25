@@ -1,8 +1,13 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from fastapi import APIRouter, Depends, Response, Body
 from typing import Annotated
 from pydantic import BaseModel
 
 from src.auth.controller.Controller import AuthController
+from src.middlewares.authorization import require_access_token
+
 
 class RequestBody(BaseModel):
     email: str
@@ -63,9 +68,25 @@ def getRouter()->APIRouter:
     ):
         return await authController.logout(response=response);
 
-        
+    @router.get("/me")
+    async def me(
+        me: Annotated[dict, Depends(require_access_token)],
+    ):
+        exp = me.get("exp")
 
+        if exp is not None:
+            expired_at = datetime.fromtimestamp(
+                float(exp),
+                tz=ZoneInfo("Asia/Kolkata")
+            )
+            message = f"Access token expires at {expired_at.strftime('%d-%m-%Y %I:%M:%S %p %Z')}"
+        else:
+            message = "Access token expiration time is not available"
 
-        
+        return {
+            "message" : message,
+            "data": me
+        }
+                
     return router;
 
