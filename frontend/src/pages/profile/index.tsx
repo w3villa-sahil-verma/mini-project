@@ -1,19 +1,15 @@
 /**
- * ProfilePage.jsx
- * Covers 4.2 (profile + address auto-suggest + map) and 4.3 (profile download).
- *
- * Install:
- *   npm i @react-google-maps/api jspdf lucide-react
- *   npx shadcn@latest add button input label card avatar separator
- *
- * Env (Vite): VITE_GOOGLE_MAPS_API_KEY
- *   In Google Cloud enable: Maps JavaScript API + Places API (New)
+ * Profile management with address suggestions, a map, and PDF export.
+ * Requires Maps JavaScript API, Places API (New), and Geocoding API for the configured key.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 import { GoogleMap, MarkerF, useJsApiLoader } from "@react-google-maps/api";
 import { jsPDF } from "jspdf";
+import { z } from "zod";
 import {
   Check,
+  LocateFixed,
   Download,
   Loader2,
   MapPin,
@@ -33,11 +29,42 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useCurrentLocation } from "@/hooks/useCurrentLocation";
+import { handleFetch } from "@/hooks/useFetch";
+import type { CommonResponse } from "@/types/common/request";
+import { toast } from "sonner";
 
 const LIBRARIES = ["places"];
 const MAP_STYLE = { width: "100%", height: "100%" };
 
-const INITIAL_PROFILE = {
+type Profile = {
+  fullName: string;
+  email: string;
+  phone: string;
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  location: google.maps.LatLngLiteral | null;
+};
+
+const profileResponseSchema = z.object({
+  full_name: z.string(),
+  email: z.string(),
+  phone: z.string().nullable(),
+  street: z.string().nullable(),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
+  postal_code: z.string().nullable(),
+  country: z.string().nullable(),
+  latitude: z.number().nullable(),
+  longitude: z.number().nullable(),
+});
+
+type ProfileResponseData = z.infer<typeof profileResponseSchema>;
+
+const INITIAL_PROFILE: Profile = {
   fullName: "",
   email: "",
   phone: "",
@@ -46,21 +73,43 @@ const INITIAL_PROFILE = {
   state: "",
   postalCode: "",
   country: "",
-  location: null, // { lat, lng }
+  location: null,
+};
+
+type AddressComponent = {
+  types: string[];
+  longText?: string;
+  long_name?: string;
 };
 
 /* -------------------------------------------------------------------------- */
 /* Address auto-suggest (Places API New)                                       */
 /* -------------------------------------------------------------------------- */
 
-function AddressAutocomplete({ value, onChange, onSelect, disabled }) {
-  const [suggestions, setSuggestions] = useState([]);
+type AddressAutocompleteProps = {
+  value: string;
+  onChange: (value: string) => void;
+  onSelect: (place: google.maps.places.Place) => void;
+  disabled: boolean;
+};
+
+function AddressAutocomplete({
+  value,
+  onChange,
+  onSelect,
+  disabled,
+}: AddressAutocompleteProps) {
+  const [suggestions, setSuggestions] = useState<
+    google.maps.places.AutocompleteSuggestion[]
+  >([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [requestFailed, setRequestFailed] = useState(false);
-  const sessionRef = useRef(null);
-  const wrapRef = useRef(null);
+  const sessionRef = useRef<google.maps.places.AutocompleteSessionToken | null>(
+    null,
+  );
+  const wrapRef = useRef<HTMLDivElement>(null);
   const listId = "address-suggestions";
 
   // Fetch suggestions, debounced while the user types.
@@ -75,7 +124,9 @@ function AddressAutocomplete({ value, onChange, onSelect, disabled }) {
       return;
     }
 
-    sessionRef.current ??= new places.AutocompleteSessionToken();
+    const sessionToken =
+      sessionRef.current ?? new places.AutocompleteSessionToken();
+    sessionRef.current = sessionToken;
     let cancelled = false;
     setRequestFailed(false);
     setLoading(true);
@@ -85,7 +136,7 @@ function AddressAutocomplete({ value, onChange, onSelect, disabled }) {
         const { suggestions: result } =
           await places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
             input: value,
-            sessionToken: sessionRef.current,
+            sessionToken,
           });
         if (!cancelled) {
           setSuggestions(result.filter((s) => s.placePrediction));
@@ -109,40 +160,53 @@ function AddressAutocomplete({ value, onChange, onSelect, disabled }) {
 
   // Close on outside click.
   useEffect(() => {
-    const close = (e) => {
-      if (!wrapRef.current?.contains(e.target)) setOpen(false);
+    const close = (event: MouseEvent) => {
+      if (
+        !(event.target instanceof Node) ||
+        !wrapRef.current?.contains(event.target)
+      ) {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  const choose = async (suggestion) => {
+  const choose = async (
+    suggestion: google.maps.places.AutocompleteSuggestion,
+  ) => {
+    const prediction = suggestion.placePrediction;
+    if (!prediction) return;
+
     setOpen(false);
     setSuggestions([]);
     try {
-      const place = suggestion.placePrediction.toPlace();
+      const place = prediction.toPlace();
       await place.fetchFields({
         fields: ["formattedAddress", "location", "addressComponents"],
       });
       sessionRef.current = null; // a session ends once a place is fetched
       onSelect(place);
     } catch {
-      onChange(suggestion.placePrediction.text.text);
+      onChange(prediction.text.text);
     }
   };
 
-  const onKeyDown = (e) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (!open || suggestions.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActive((i) => (i + 1) % suggestions.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActive((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
-    } else if (e.key === "Enter" && active >= 0) {
-      e.preventDefault();
-      choose(suggestions[active]);
-    } else if (e.key === "Escape") {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActive((index) => (index + 1) % suggestions.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActive((index) =>
+        index <= 0 ? suggestions.length - 1 : index - 1,
+      );
+    } else if (event.key === "Enter" && active >= 0) {
+      event.preventDefault();
+      const suggestion = suggestions[active];
+      if (suggestion) void choose(suggestion);
+    } else if (event.key === "Escape") {
       setOpen(false);
     }
   };
@@ -165,8 +229,8 @@ function AddressAutocomplete({ value, onChange, onSelect, disabled }) {
         placeholder="Start typing your address"
         value={value}
         disabled={disabled}
-        onChange={(e) => {
-          onChange(e.target.value);
+        onChange={(event) => {
+          onChange(event.target.value);
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
@@ -194,6 +258,7 @@ function AddressAutocomplete({ value, onChange, onSelect, disabled }) {
         >
           {suggestions.map((s, i) => {
             const p = s.placePrediction;
+            if (!p) return null;
             const main = p.mainText?.text ?? p.text.text;
             const secondary = p.secondaryText?.text;
             return (
@@ -203,8 +268,8 @@ function AddressAutocomplete({ value, onChange, onSelect, disabled }) {
                 role="option"
                 aria-selected={i === active}
                 onMouseEnter={() => setActive(i)}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => choose(s)}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => void choose(s)}
                 className={`flex cursor-pointer items-start gap-2 rounded-sm px-2 py-2 text-sm ${
                   i === active ? "bg-accent text-accent-foreground" : ""
                 }`}
@@ -231,9 +296,31 @@ function AddressAutocomplete({ value, onChange, onSelect, disabled }) {
 /* Helpers                                                                     */
 /* -------------------------------------------------------------------------- */
 
-function parsePlace(place) {
-  const get = (type) =>
-    place.addressComponents?.find((c) => c.types.includes(type))?.longText ?? "";
+function parsePlace(
+  place: google.maps.places.Place,
+): Pick<
+  Profile,
+  "street" | "city" | "state" | "postalCode" | "country" | "location"
+> {
+  return parseAddressComponents(
+    place.addressComponents,
+    place.location
+      ? { lat: place.location.lat(), lng: place.location.lng() }
+      : null,
+  );
+}
+
+function parseAddressComponents(
+  components: readonly AddressComponent[] | undefined,
+  location: google.maps.LatLngLiteral | null,
+): Pick<
+  Profile,
+  "street" | "city" | "state" | "postalCode" | "country" | "location"
+> {
+  const get = (type: string) => {
+    const component = components?.find((item) => item.types.includes(type));
+    return component?.longText ?? component?.long_name ?? "";
+  };
   const street = [get("street_number"), get("route")].filter(Boolean).join(" ");
   return {
     street: street || get("sublocality_level_1") || get("premise"),
@@ -241,19 +328,17 @@ function parsePlace(place) {
     state: get("administrative_area_level_1"),
     postalCode: get("postal_code"),
     country: get("country"),
-    location: place.location
-      ? { lat: place.location.lat(), lng: place.location.lng() }
-      : null,
+    location,
   };
 }
 
-function initials(name) {
+function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
 
-function downloadProfilePdf(profile) {
+function downloadProfilePdf(profile: Profile) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const left = 56;
   let y = 72;
@@ -271,7 +356,7 @@ function downloadProfilePdf(profile) {
   doc.line(left, y, 539, y);
   y += 32;
 
-  const section = (title, rows) => {
+  const section = (title: string, rows: [string, string][]) => {
     doc.setTextColor(20);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
@@ -316,40 +401,138 @@ function downloadProfilePdf(profile) {
 /* Page                                                                        */
 /* -------------------------------------------------------------------------- */
 
-export function ProfilePage({ initialProfile = INITIAL_PROFILE, onSave }) {
-  const [profile, setProfile] = useState({ ...INITIAL_PROFILE, ...initialProfile });
-  const [search, setSearch] = useState(
-    [initialProfile.street, initialProfile.city].filter(Boolean).join(", ")
-  );
+export function ProfilePage() {
+  const [profile, setProfile] = useState<Profile>(INITIAL_PROFILE);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const { getCurrentLocation, loading: locating } = useCurrentLocation();
 
-  const { isLoaded, loadError } = useJsApiLoader({
+  const { isLoaded, loadError: mapLoadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "",
     libraries: LIBRARIES,
   });
 
-  const set = (key) => (e) => {
+  const applyApiProfile = useCallback((data: ProfileResponseData) => {
+    const nextProfile: Profile = {
+      fullName: data.full_name,
+      email: data.email,
+      phone: data.phone ?? "",
+      street: data.street ?? "",
+      city: data.city ?? "",
+      state: data.state ?? "",
+      postalCode: data.postal_code ?? "",
+      country: data.country ?? "",
+      location:
+        data.latitude !== null && data.longitude !== null
+          ? { lat: data.latitude, lng: data.longitude }
+          : null,
+    };
+    setProfile(nextProfile);
+    setSearch([nextProfile.street, nextProfile.city].filter(Boolean).join(", "));
+  }, []);
+
+  const loadProfile = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
+    void handleFetch<CommonResponse<ProfileResponseData>>(
+      "/api/v1/users/me",
+      (response) => {
+        const parsed = profileResponseSchema.safeParse(response.data);
+        if (!parsed.success) {
+          const message = "Unexpected profile data format.";
+          setLoadError(message);
+          toast.error(message);
+        } else {
+          applyApiProfile(parsed.data);
+        }
+        setLoading(false);
+      },
+      (error) => {
+        setLoadError(error.message);
+        toast.error(error.message);
+        setLoading(false);
+      },
+    );
+  }, [applyApiProfile]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  const set = (key: Exclude<keyof Profile, "location">) => (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     setSaved(false);
-    setProfile((p) => ({ ...p, [key]: e.target.value }));
+    setProfile((previous) => ({ ...previous, [key]: event.target.value }));
   };
 
-  const handleSelect = useCallback((place) => {
+  const handleSelect = useCallback((place: google.maps.places.Place) => {
     const parsed = parsePlace(place);
     setSaved(false);
-    setProfile((p) => ({ ...p, ...parsed }));
+    setProfile((previous) => ({ ...previous, ...parsed }));
     setSearch(place.formattedAddress ?? "");
   }, []);
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
+  const handleUseCurrentLocation = async () => {
     try {
-      await onSave?.(profile);
-      setSaved(true);
-    } finally {
-      setSaving(false);
+      const currentLocation = await getCurrentLocation();
+      const address = parseAddressComponents(
+        currentLocation.addressComponents,
+        currentLocation.coordinates,
+      );
+      setProfile((previous) => ({ ...previous, ...address }));
+      setSearch(currentLocation.formattedAddress);
+      setSaved(false);
+      toast.success("Current location added to your profile.");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not determine your current location.";
+      toast.error(message);
     }
+  };
+
+  const handleSave = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setSaved(false);
+    void handleFetch<CommonResponse<ProfileResponseData>>(
+      "/api/v1/users/me",
+      (response) => {
+        const parsed = profileResponseSchema.safeParse(response.data);
+        if (!parsed.success) {
+          toast.error("Unexpected profile data format.");
+        } else {
+          applyApiProfile(parsed.data);
+          setSaved(true);
+          toast.success(response.message);
+        }
+        setSaving(false);
+      },
+      (error) => {
+        toast.error(error.message);
+        setSaving(false);
+      },
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          full_name: profile.fullName,
+          email: profile.email,
+          phone: profile.phone || null,
+          street: profile.street || null,
+          city: profile.city || null,
+          state: profile.state || null,
+          postal_code: profile.postalCode || null,
+          country: profile.country || null,
+          latitude: profile.location?.lat ?? null,
+          longitude: profile.location?.lng ?? null,
+        }),
+      },
+    );
   };
 
   const mapOptions = useMemo(
@@ -361,6 +544,29 @@ export function ProfilePage({ initialProfile = INITIAL_PROFILE, onSave }) {
     }),
     []
   );
+
+  if (loading) {
+    return (
+      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+        <p className="text-sm text-muted-foreground" role="status">
+          Loading profile...
+        </p>
+      </main>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8 sm:px-6">
+        <p className="text-sm text-destructive" role="alert">
+          Could not load your profile: {loadError}
+        </p>
+        <Button variant="outline" onClick={loadProfile}>
+          Retry
+        </Button>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6">
@@ -439,19 +645,31 @@ export function ProfilePage({ initialProfile = INITIAL_PROFILE, onSave }) {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="address-search">Find address</Label>
-                {loadError ? (
+                <AddressAutocomplete
+                  value={search}
+                  onChange={setSearch}
+                  onSelect={handleSelect}
+                  disabled={!isLoaded || Boolean(mapLoadError)}
+                />
+                {mapLoadError && (
                   <p className="flex items-center gap-2 text-sm text-destructive" role="alert">
                     <TriangleAlert className="size-4" />
-                    Address search is unavailable. Enter your address manually.
+                    Address search and current location are unavailable. Enter your address manually.
                   </p>
-                ) : (
-                  <AddressAutocomplete
-                    value={search}
-                    onChange={setSearch}
-                    onSelect={handleSelect}
-                    disabled={!isLoaded}
-                  />
                 )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleUseCurrentLocation}
+                  disabled={!isLoaded || locating || Boolean(mapLoadError)}
+                >
+                  {locating ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <LocateFixed className="size-4" />
+                  )}
+                  {locating ? "Finding location..." : "Use current location"}
+                </Button>
               </div>
 
               <div className="space-y-2">
@@ -519,7 +737,7 @@ export function ProfilePage({ initialProfile = INITIAL_PROFILE, onSave }) {
                 </GoogleMap>
               ) : (
                 <div className="flex h-full min-h-64 flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
-                  {loadError ? (
+                  {mapLoadError ? (
                     <TriangleAlert className="size-6" />
                   ) : !isLoaded ? (
                     <Loader2 className="size-6 animate-spin" />
@@ -527,7 +745,7 @@ export function ProfilePage({ initialProfile = INITIAL_PROFILE, onSave }) {
                     <MapPinOff className="size-6" />
                   )}
                   <p>
-                    {loadError
+                    {mapLoadError
                       ? "The map couldn't load. Check your connection and try again."
                       : !isLoaded
                       ? "Loading map…"

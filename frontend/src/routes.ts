@@ -72,7 +72,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "profile",
-            Component: Dashboard,
+            Component: ProfilePage,
           },
           {
             path: "plans",
