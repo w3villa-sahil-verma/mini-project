@@ -14,6 +14,7 @@ import { logger } from "./utils/logger";
 import { createContext } from "react-router";
 import { toast } from "sonner";
 import type { User } from "./types/common/user";
+import { ProfilePage } from "./pages/profile";
 
 
 export const userContext = createContext<User | null>(null);
@@ -102,7 +103,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "profile",
-            Component: Dashboard,
+            Component: ProfilePage,
           },
           {
             path: "users",
