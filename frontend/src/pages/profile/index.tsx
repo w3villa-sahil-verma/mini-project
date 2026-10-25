@@ -34,7 +34,7 @@ import { handleFetch } from "@/hooks/useFetch";
 import type { CommonResponse } from "@/types/common/request";
 import { toast } from "sonner";
 
-const LIBRARIES = ["places"];
+const LIBRARIES: "places"[] = ["places"];
 const MAP_STYLE = { width: "100%", height: "100%" };
 
 type Profile = {
@@ -78,7 +78,7 @@ const INITIAL_PROFILE: Profile = {
 
 type AddressComponent = {
   types: string[];
-  longText?: string;
+  longText?: string | null;
   long_name?: string;
 };
 
