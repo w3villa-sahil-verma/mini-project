@@ -19,16 +19,34 @@ import {
   IconUsers,
   IconInnerShadowTop,
 } from "@tabler/icons-react";
-import { Link } from "react-router";
+import { Link, useRouteLoaderData } from "react-router";
+import type { User } from "@/types/common/user";
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useRouteLoaderData<{ user: User | null }>("root")!;
+
+  const role = user?.role || "USER";
+
+  const user_nav = [
     {
+      title: "Dashboard",
+      url: "/user/dashboard",
+      icon: <IconDashboard />,
+    },
+    {
+      title: "Profile",
+      url: "/user/profile",
+      icon: <IconListDetails />,
+    },
+    {
+      title: "Pricing",
+      url: "/user/pricing",
+      icon: <IconFolder />,
+    },
+  ];
+
+  const admin_nav = [
+     {
       title: "Dashboard",
       url: "/admin/dashboard",
       icon: <IconDashboard />,
@@ -48,22 +66,34 @@ const data = {
       url: "/admin/users",
       icon: <IconUsers />,
     },
-  ],
-};
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  ]
+
+  const NAV = {
+    "USER" : user_nav,
+    "ADMIN" : admin_nav
+  }
+
+  const data = {
+    user: {
+      name: "shadcn",
+      email: user?.user_id || "m@example.com",
+      avatar: "/avatars/shadcn.jpg",
+    },
+    navMain: NAV[role]
+  };
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <Link to={"/"}>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
-            >
-              <IconInnerShadowTop className="size-5!" />
-              <span className="text-base font-semibold">ABC Membership Managment</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton className="data-[slot=sidebar-menu-button]:p-1.5!">
+                <IconInnerShadowTop className="size-5!" />
+                <span className="text-base font-semibold">
+                  ABC Membership Managment
+                </span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </Link>
         </SidebarMenu>
       </SidebarHeader>

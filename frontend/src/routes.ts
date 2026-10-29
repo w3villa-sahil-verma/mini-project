@@ -75,7 +75,7 @@ export const router = createBrowserRouter([
             Component: ProfilePage,
           },
           {
-            path: "plans",
+            path: "pricing",
             Component: Pricing,
           },
         ],

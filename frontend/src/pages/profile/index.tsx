@@ -569,7 +569,7 @@ export function ProfilePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6">      
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
