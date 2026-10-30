@@ -9,6 +9,7 @@ import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { handleFetch } from "@/hooks/useFetch";
 import type { CommonResponse } from "@/types/common/request";
+import { toast } from "sonner";
 
 type PricingPlan = {
   id: number;
@@ -18,14 +19,73 @@ type PricingPlan = {
   currency: string;
 };
 
-function request<T>(url: string): Promise<T> {
+type CheckoutResult =
+  | {
+      type: "activated";
+      subscription: { status: "ACTIVE" | "SCHEDULED" };
+    }
+  | {
+      type: "razorpay";
+      order_id: string;
+      amount: number;
+      currency: string;
+      plan_name: string;
+    };
+
+type RazorpaySuccess = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpaySuccess) => void;
+  modal: { ondismiss: () => void };
+  theme: { color: string };
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => { open: () => void };
+  }
+}
+
+const RAZORPAY_CHECKOUT_URL =
+  "https://checkout.razorpay.com/v1/checkout.js";
+
+function request<T>(url: string, init?: RequestInit): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     void handleFetch<T>(
       url,
       resolve,
       reject,
-      { credentials: "include" },
+      { credentials: "include", ...init },
     );
+  });
+}
+
+function loadRazorpay(): Promise<void> {
+  if (window.Razorpay) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = RAZORPAY_CHECKOUT_URL;
+    script.async = true;
+    script.onload = () => {
+      if (window.Razorpay) {
+        resolve();
+      } else {
+        reject(new Error("Razorpay Checkout could not be initialized."));
+      }
+    };
+    script.onerror = () => reject(new Error("Could not load Razorpay Checkout."));
+    document.body.appendChild(script);
   });
 }
 
@@ -52,6 +112,92 @@ const Pricing = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [checkoutPlanId, setCheckoutPlanId] = useState<number | null>(null);
+
+  async function startCheckout(plan: PricingPlan) {
+    setCheckoutPlanId(plan.id);
+    let checkoutOpened = false;
+
+    try {
+      const keyId = import.meta.env.ROZAR_PAY_API_KEY;
+      if (plan.price_minor > 0 && !keyId) {
+        throw new Error("Set ROZAR_PAY_API_KEY in frontend/.env.");
+      }
+
+      const response = await request<CommonResponse<CheckoutResult>>(
+        "/api/v1/payments/checkout",
+        {
+          method: "POST",
+          body: JSON.stringify({ plan_id: plan.id }),
+        },
+      );
+
+      if (response.data.type === "activated") {
+        toast.success(
+          response.data.subscription.status === "SCHEDULED"
+            ? "Free plan scheduled after your current membership."
+            : "Free plan activated.",
+        );
+        return;
+      }
+
+      await loadRazorpay();
+      if (!window.Razorpay) {
+        throw new Error("Razorpay Checkout could not be initialized.");
+      }
+      if (!keyId) {
+        throw new Error("Set ROZAR_PAY_API_KEY in frontend/.env.");
+      }
+
+      const checkout = new window.Razorpay({
+        key: keyId,
+        amount: response.data.amount,
+        currency: response.data.currency,
+        name: "Gym Membership",
+        description: response.data.plan_name,
+        order_id: response.data.order_id,
+        handler: (payment) => {
+          void request<CommonResponse<{ status: "ACTIVE" | "SCHEDULED" }>>(
+            "/api/v1/payments/verify",
+            {
+              method: "POST",
+              body: JSON.stringify(payment),
+            },
+          )
+            .then((verification) => {
+              toast.success(
+                verification.data.status === "SCHEDULED"
+                  ? "Payment successful. Your plan will start after your current membership."
+                  : "Payment successful. Your plan is now active.",
+              );
+            })
+            .catch((verificationError: unknown) => {
+              toast.error(
+                verificationError instanceof Error
+                  ? verificationError.message
+                  : "Could not verify the payment.",
+              );
+            })
+            .finally(() => setCheckoutPlanId(null));
+        },
+        modal: {
+          ondismiss: () => setCheckoutPlanId(null),
+        },
+        theme: { color: "#2563eb" },
+      });
+
+      checkout.open();
+      checkoutOpened = true;
+    } catch (checkoutError) {
+      toast.error(
+        checkoutError instanceof Error
+          ? checkoutError.message
+          : "Could not start checkout.",
+      );
+    } finally {
+      if (!checkoutOpened) setCheckoutPlanId(null);
+    }
+  }
 
   useEffect(() => {
     let isCurrentRequest = true;
@@ -190,8 +336,15 @@ const Pricing = () => {
                           </li>
                         </ul>
 
-                        <Button className="w-full h-12 cursor-pointer" variant="outline">
-                          Get started
+                        <Button
+                          className="w-full h-12 cursor-pointer"
+                          variant="outline"
+                          disabled={checkoutPlanId !== null}
+                          onClick={() => void startCheckout(plan)}
+                        >
+                          {checkoutPlanId === plan.id
+                            ? "Processing..."
+                            : "Get started"}
                         </Button>
                       </CardContent>
                     </Card>
