@@ -75,6 +75,27 @@ class PlanController:
             "data": [self._serialize(plan) for plan in plans],
         }
 
+    async def get_active(self):
+        result = await self.db.scalars(
+            select(Plan)
+            .where(Plan.is_active.is_(True))
+            .order_by(Plan.price_minor.asc(), Plan.id.asc())
+        )
+
+        return {
+            "message": "Available plans retrieved successfully",
+            "data": [
+                {
+                    "id": plan.id,
+                    "name": plan.name,
+                    "duration_hours": plan.duration_hours,
+                    "price_minor": plan.price_minor,
+                    "currency": plan.currency,
+                }
+                for plan in result.all()
+            ],
+        }
+
     async def get(self, plan_id: int):
         plan = await self.db.get(Plan, plan_id)
 

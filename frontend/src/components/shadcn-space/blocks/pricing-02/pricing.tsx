@@ -4,64 +4,81 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-import { Check, Flame } from "lucide-react";
+import { Check } from "lucide-react";
 import { motion } from "motion/react";
+import { useEffect, useState } from "react";
+import { handleFetch } from "@/hooks/useFetch";
+import type { CommonResponse } from "@/types/common/request";
 
 type PricingPlan = {
-  plan_name: string;
-  plan_descp: string;
-  plan_price: number;
-  plan_feature: string[];
-  plan_recommended: boolean;
+  id: number;
+  name: string;
+  duration_hours: number;
+  price_minor: number;
+  currency: string;
 };
 
-const pricingData: PricingPlan[] = [
-  {
-    plan_name: "Pro",
-    plan_descp:
-      "Launch your website faster with ready-to-use components, blocks and zero setup friction with us.",
-    plan_price: 2500,
-    plan_feature: [
-      "Access to all core Shadcn UI blocks",
-      "Copy-paste ready React code",
-      "Regular library updates",
-      "Commercial use license",
-      "Community support & documentation",
-    ],
-    plan_recommended: false,
-  },
-  {
-    plan_name: "Pro Plus",
-    plan_descp:
-      "Scale with confidence using premium blocks, templates, and included strategy guidance.",
-    plan_price: 3800,
-    plan_feature: [
-      "Everything in Pro",
-      "Premium templates & more sections",
-      "Early access to new components",
-      "Private Discord & priority support",
-      "Monthly strategy & growth sessions",
-    ],
-    plan_recommended: true,
-  },
-  {
-    plan_name: "Enterprise",
-    plan_descp:
-      "Build at scale with full access, priority support, and dedicated one-on-one strategy calls.",
-    plan_price: 5000,
-    plan_feature: [
-      "Everything in Pro Plus",
-      "Unlimited team seats",
-      "Dedicated UI & integration support",
-      "Custom component requests",
-      "One-on-one implementation",
-    ],
-    plan_recommended: false,
-  },
-];
+function request<T>(url: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    void handleFetch<T>(
+      url,
+      resolve,
+      reject,
+      { credentials: "include" },
+    );
+  });
+}
+
+function formatDuration(durationHours: number): string {
+  if (durationHours % 24 === 0) {
+    const days = durationHours / 24;
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+
+  return `${durationHours} hour${durationHours === 1 ? "" : "s"}`;
+}
+
+function formatPrice(priceMinor: number, currency: string): string {
+  const amount = new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(priceMinor / 100);
+
+  return `${currency} ${amount}`;
+}
 
 const Pricing = () => {
+  const [plans, setPlans] = useState<PricingPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let isCurrentRequest = true;
+
+    void request<CommonResponse<PricingPlan[]>>("/api/v1/plans")
+      .then((response) => {
+        if (!isCurrentRequest) return;
+        setPlans(response.data);
+        setError(null);
+      })
+      .catch((requestError: unknown) => {
+        if (!isCurrentRequest) return;
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Could not load pricing plans.",
+        );
+      })
+      .finally(() => {
+        if (isCurrentRequest) setLoading(false);
+      });
+
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [reloadKey]);
+
   const pricingCardVariants = {
     hidden: {
       opacity: 0,
@@ -73,7 +90,7 @@ const Pricing = () => {
       transition: {
         delay: index * 0.25,
         duration: 0.6,
-        ease: "easeInOut",
+        ease: "easeInOut" as const,
       },
     }),
   };
@@ -94,100 +111,95 @@ const Pricing = () => {
             {/* Heading */}
             <div className="max-w-3xs sm:max-w-md mx-auto text-center">
               <h2 className="text-foreground text-3xl sm:text-5xl font-medium">
-                Pick the plan that fits your start-up
+                Choose your membership plan
               </h2>
             </div>
           </div>
-          {/*  */}
-          <div className="flex flex-col lg:flex-row gap-6 items-stretch h-full w-full">
-            {pricingData.map((plan: PricingPlan, index: number) => {
-              const isFeatured = plan.plan_recommended;
+          {loading ? (
+            <p className="text-muted-foreground" role="status">
+              Loading pricing plans...
+            </p>
+          ) : error ? (
+            <div className="flex flex-col items-center gap-3 text-center">
+              <p className="text-destructive" role="alert">{error}</p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setLoading(true);
+                  setError(null);
+                  setReloadKey((current) => current + 1);
+                }}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : plans.length === 0 ? (
+            <p className="text-muted-foreground">
+              No membership plans are currently available.
+            </p>
+          ) : (
+            <div className="flex flex-col lg:flex-row gap-6 items-stretch h-full w-full">
+              {plans.map((plan: PricingPlan, index: number) => {
+                const duration = formatDuration(plan.duration_hours);
 
-              return (
-                <motion.div
-                  key={index}
-                  variants={pricingCardVariants}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  custom={index}
-                  className={cn(
-                    "relative flex-1 flex flex-col w-full",
-                    isFeatured && "z-10 scale-102"
-                  )}
-                >
-                  {/* GRADIENT BORDER */}
-                  {isFeatured && (
-                    <div className="absolute -inset-0.5 rounded-2xl overflow-hidden">
-                      {/* Animated conic-gradient border */}
-                      <div className="absolute -inset-full blur-xs animate-spin [animation-duration:2s] bg-conic from-blue-500 via-red-500 to-teal-400" />
-
-                      {/* Inner mask */}
-                      <div className="absolute inset-0.5 rounded-2xl bg-card" />
-                    </div>
-                  )}
-
-                  {/* CARD */}
-                  <Card
-                    className={cn(
-                      "relative flex-1 flex flex-col rounded-2xl p-8 gap-8",
-                      isFeatured ? "border-0 ring-0" : "border border-border"
-                    )}
+                return (
+                  <motion.div
+                    key={plan.id}
+                    variants={pricingCardVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    custom={index}
+                    className="relative flex-1 flex flex-col w-full"
                   >
-                    <CardHeader className="p-0">
-                      <div className="flex flex-col gap-3 self-stretch">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-2xl font-medium text-primary">
-                            {plan.plan_name}
-                          </CardTitle>
-                          {isFeatured && (
-                            <Badge className="py-1 px-3 text-sm font-medium leading-5 w-fit h-7 flex items-center gap-1.5 [&>svg]:size-4!">
-                              <Flame size={16} /> Recommend
+                    <Card className="relative flex-1 flex flex-col rounded-2xl p-8 gap-8 border border-border">
+                      <CardHeader className="p-0">
+                        <div className="flex flex-col gap-3 self-stretch">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-2xl font-medium text-primary">
+                              {plan.name}
+                            </CardTitle>
+                            <Badge variant="outline">
+                              {duration}
                             </Badge>
-                          )}
+                          </div>
+                          <CardDescription className="text-base font-normal">
+                            Membership access for {duration}.
+                          </CardDescription>
                         </div>
-                        <CardDescription className="text-base font-normal max-w-2x">
-                          {plan.plan_descp}
-                        </CardDescription>
-                      </div>
-                    </CardHeader>
+                      </CardHeader>
 
-                    <CardContent className="flex flex-col flex-1 gap-8 p-0">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-foreground text-4xl sm:text-5xl font-medium">
-                          ${plan.plan_price}
-                        </span>
-                        <span className="text-muted-foreground text-base font-normal">
-                          /month
-                        </span>
-                      </div>
+                      <CardContent className="flex flex-col flex-1 gap-8 p-0">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-foreground text-4xl sm:text-5xl font-medium">
+                            {formatPrice(plan.price_minor, plan.currency)}
+                          </span>
+                          <span className="text-muted-foreground text-base font-normal">
+                            for {duration}
+                          </span>
+                        </div>
 
-                      <Separator orientation="horizontal" />
+                        <Separator orientation="horizontal" />
 
-                      <ul className="flex flex-col gap-4 flex-1">
-                        {plan.plan_feature.map((feature, idx) => (
+                        <ul className="flex flex-col gap-4 flex-1">
                           <li
-                            key={idx}
                             className="flex items-center gap-3 text-base font-normal text-muted-foreground"
                           >
                             <Check className="size-4 text-primary shrink-0" />
-                            {feature}
+                            Membership access
                           </li>
-                        ))}
-                      </ul>
+                        </ul>
 
-                      <Button
-                        className="w-full h-12 cursor-pointer"
-                        variant={isFeatured ? "default" : "outline"}
-                      >
-                        Get started
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
+                        <Button className="w-full h-12 cursor-pointer" variant="outline">
+                          Get started
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </section>

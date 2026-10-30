@@ -6,7 +6,6 @@ import { Dashboard } from "./pages/dashboard";
 import { PrimaryLayout } from "./layouts/primary";
 import { Plan } from "./pages/plan";
 import { Users } from "./pages/user/users.page";
-import Pricing from "./components/shadcn-space/blocks/pricing-02/pricing";
 import { handleFetch } from "./hooks/useFetch";
 import type { CommonResponse } from "./types/common/request";
 import { logger } from "./utils/logger";
@@ -15,6 +14,7 @@ import { createContext } from "react-router";
 import { toast } from "sonner";
 import type { User } from "./types/common/user";
 import { ProfilePage } from "./pages/profile";
+import { PricingPage } from "./pages/pricing";
 
 
 export const userContext = createContext<User | null>(null);
@@ -76,7 +76,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "pricing",
-            Component: Pricing,
+            Component: PricingPage,
           },
         ],
       },

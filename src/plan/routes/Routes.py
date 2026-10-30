@@ -4,6 +4,23 @@ from pydantic import BaseModel, Field
 
 from src.plan.controller.Controller import PlanController
 
+
+def getPricingRouter() -> APIRouter:
+    router: APIRouter = APIRouter(
+        prefix="/plans",
+        tags=["Pricing"],
+        responses={404: {"description": "Not found"}},
+    )
+
+    @router.get("")
+    async def get_available(
+        controller: Annotated[PlanController, Depends(PlanController)],
+    ):
+        return await controller.get_active()
+
+    return router
+
+
 class PlanCreate(BaseModel):
     name: str = Field(min_length=1, max_length=30)
     duration_hours: int = Field(gt=0)
@@ -81,4 +98,3 @@ def getRouter()->APIRouter:
         return await controller.soft_delete(plan_id)
         
     return router;
-
