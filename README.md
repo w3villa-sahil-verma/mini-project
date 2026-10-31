@@ -8,12 +8,18 @@ values from that file. Blank optional SMTP values stay unset, and blank
 numeric/boolean mail settings use their defaults. Keep secrets in the ignored
 root `.env` file and never commit it.
 
+For Render, use the repository root as the service root directory,
+`pip install -r requirements.txt` as the build command, and
+`uvicorn src.Application:app --host 0.0.0.0 --port $PORT` as the start command.
+Configure production secrets and service URLs as Render environment variables.
+
 ## Razorpay payments
 
-Set `ROZAR_PAY_API_KEY` in both `frontend/.env` and `src/.env`, and set
-`ROZAR_PAY_SECRET` only in `src/.env`. Use the test credentials from the
+Set the backend `ROZAR_PAY_API_KEY` and `ROZAR_PAY_SECRET` in the root `.env`
+file (or Render environment variables). Use the test credentials from the
 Razorpay dashboard while developing. The API key ID is public; the secret must
-never be exposed to the frontend or committed.
+never be exposed to the frontend or committed. Configure the public checkout
+key separately in the frontend's Vite environment.
 
 The authenticated `POST /api/v1/payments/checkout` endpoint creates an order
 using the selected active plan's server-side price. Free plans are activated
@@ -25,8 +31,8 @@ user's memberships can be read from `GET /api/v1/payments/subscriptions/me`.
 
 ## Google and Facebook sign-in
 
-Set the provider credentials and callback URLs in `src/.env` (see
-`src/.env.example`). In the Google Cloud and Meta developer consoles, register
+Set the provider credentials and callback URLs in the root `.env` file (see
+the root `.env.example`). In the Google Cloud and Meta developer consoles, register
 the corresponding callback URLs exactly:
 
 ```text
@@ -70,7 +76,7 @@ counts and recent expirations.
 
 ## Profile images with Storj
 
-Configure these values in `src/.env` (or as backend environment variables):
+Configure these values in the root `.env` (or as backend environment variables):
 
 ```dotenv
 STORJ_S3_ENDPOINT=https://gateway.storjshare.io

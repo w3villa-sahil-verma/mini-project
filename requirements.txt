@@ -1,0 +1,12 @@
+aiomysql
+boto3
+fastapi
+fastapi-mail
+httpx
+PyJWT
+pwdlib[argon2]
+pydantic-settings
+python-dotenv
+rich
+SQLAlchemy
+uvicorn[standard]
