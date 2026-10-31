@@ -31,9 +31,10 @@ The login and registration pages send users to
 HTTP-only OAuth state cookie, exchanges the authorization code server-side,
 and creates or finds a user before setting the normal HTTP-only
 `access_token` cookie. New provider emails create a regular user account.
-Google email must be provider-verified. Facebook sign-in requires an email;
-Facebook is not automatically linked to an existing account by email. The
-callback redirects successful users to the frontend home page. Use
+Google email must be provider-verified. When a provider reports the same email
+as an existing account, its provider identity is linked to that account;
+Facebook sign-in requires the provider to return an email. The callback
+redirects successful users to the frontend home page. Use
 `OAUTH_COOKIE_SECURE=true` with HTTPS in production; the example disables the
 secure-cookie flag for local HTTP development.
 

@@ -11,7 +11,7 @@ import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -276,18 +276,14 @@ class OAuthService:
             )
 
         if user is None:
-            user = await self.db.scalar(select(User).where(User.email == email))
+            user = await self.db.scalar(
+                select(User).where(func.lower(User.email) == email)
+            )
             if user is not None and user.is_deleted:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="This user account is not available.",
                 )
-            if user is not None and provider == "facebook":
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Sign in with the existing account method before linking Facebook.",
-                )
-
             if user is None:
                 user = User(email=email)
                 self.db.add(user)
@@ -316,6 +312,11 @@ class OAuthService:
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
                         detail="Could not link this OAuth account. Please try again.",
+                    )
+                if user.is_deleted:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="This user account is not available.",
                     )
 
         now = datetime.now(timezone.utc)
