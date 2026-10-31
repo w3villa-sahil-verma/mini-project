@@ -71,18 +71,40 @@ class StorjStorage:
                 detail="Uploaded image metadata does not match the requested file.",
             )
 
-    async def get_image_url(self, object_key: str) -> str:
-        public_url = self.public_url(object_key)
+    async def delete_object(self, object_key: str) -> None:
+        client, bucket = self._get_client_and_bucket()
+        try:
+            await asyncio.to_thread(
+                client.delete_object,
+                Bucket=bucket,
+                Key=object_key,
+            )
+        except (BotoCoreError, ClientError) as error:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not delete the image from storage.",
+            ) from error
+
+    async def get_image_url(
+        self,
+        object_key: str,
+        *,
+        expires_in: int = 3600,
+        use_public_url: bool = True,
+    ) -> str:
+        public_url = self.public_url(object_key) if use_public_url else None
         if public_url:
             return public_url
 
         client, bucket = self._get_client_and_bucket()
+        if expires_in < 1 or expires_in > 3600:
+            raise ValueError("Signed image URL lifetime must be between 1 and 3600 seconds.")
         try:
             return await asyncio.to_thread(
                 client.generate_presigned_url,
                 "get_object",
                 Params={"Bucket": bucket, "Key": object_key},
-                ExpiresIn=3600,
+                ExpiresIn=expires_in,
             )
         except BotoCoreError as error:
             raise HTTPException(

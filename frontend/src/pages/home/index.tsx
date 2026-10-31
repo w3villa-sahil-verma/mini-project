@@ -68,6 +68,12 @@ export function Home() {
           >
             How it works
           </a>
+          <Link
+            className="transition-colors hover:text-[#173b35]"
+            to="/gallary"
+          >
+            Gallery
+          </Link>
           <a className="transition-colors hover:text-[#173b35]" href="#support">
             Support
           </a>
@@ -104,6 +110,13 @@ export function Home() {
             >
               How it works
             </a>
+            <Link
+              onClick={() => setMenuOpen(false)}
+              className="block rounded-xl px-4 py-3 text-sm font-medium text-[#173b35] hover:bg-[#e8f0e8] dark:text-[#eef4ed] dark:hover:bg-[#244a42]"
+              to="/gallary"
+            >
+              Gallery
+            </Link>
             <a
               onClick={() => setMenuOpen(false)}
               className="block rounded-xl px-4 py-3 text-sm font-medium text-[#173b35] hover:bg-[#e8f0e8] dark:text-[#eef4ed] dark:hover:bg-[#244a42]"

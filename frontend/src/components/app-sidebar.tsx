@@ -17,6 +17,7 @@ import {
   IconFolder,
   IconUsers,
   IconInnerShadowTop,
+  IconPhoto,
 } from "@tabler/icons-react";
 import { Link, useRouteLoaderData } from "react-router";
 import type { User } from "@/types/common/user";
@@ -36,6 +37,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Profile",
       url: "/user/profile",
       icon: <IconListDetails />,
+    },
+    {
+      title: "Gallery",
+      url: "/gallary",
+      icon: <IconPhoto />,
     },
   ];
 
@@ -59,6 +65,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Users",
       url: "/admin/users",
       icon: <IconUsers />,
+    },
+    {
+      title: "Gallery",
+      url: "/admin/gallery",
+      icon: <IconPhoto />,
     },
   ];
 

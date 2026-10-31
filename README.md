@@ -1,27 +1,4 @@
-# ABC GYM
-
-Best GYM of Kanpur
-
-| Feature                    | 🆓 Free | 🥈 Silver |    🥇 Gold   |
-| -------------------------- | :-----: | :-------: | :----------: |
-| Gym floor access           |    ✅    |     ✅     |       ✅      |
-| Basic workout plans        |    ✅    |     ✅     |       ✅      |
-| Exercise library           | Limited |    Full   |     Full     |
-| Workout tracking           |    ❌    |     ✅     |       ✅      |
-| Progress tracking          |    ❌    |     ✅     |       ✅      |
-| Body measurement tracking  |    ❌    |     ✅     |       ✅      |
-| Personalized workout plan  |    ❌    |     ❌     |       ✅      |
-| AI workout recommendations |    ❌    |     ❌     |       ✅      |
-| Trainer consultation       |    ❌    | 1 session |  2 sessions  |
-| Group classes              |    ❌    |     ✅     |       ✅      |
-| Premium classes            |    ❌    |     ❌     |       ✅      |
-| Diet/nutrition guidance    |  Basic  |  Standard | Personalized |
-| Workout history            |    ❌    |  30 days  |   Unlimited  |
-| Advanced analytics         |    ❌    |     ❌     |       ✅      |
-| Personal trainer priority  |    ❌    |     ❌     |       ✅      |
-| Guest pass                 |    ❌    |     ❌     |    1 guest   |
-| Exclusive offers           |    ❌    |     ✅     |       ✅      |
-| Priority support           |    ❌    |     ❌     |       ✅      |
+# Image Gallery
 
 ## Razorpay payments
 
@@ -82,3 +59,14 @@ prefix including the access grant, for example
 appended by the backend. A bare `/raw` URL is not sufficient and falls back to
 a one-hour signed GET URL. Leave it empty for private buckets; the backend then
 generates a one-hour signed GET URL when returning the profile.
+
+## Gallery
+
+Anyone can browse `/gallary`. Free images are visible to all visitors;
+premium images are unlocked only for a valid signed-in user with an active
+subscription and remain unlocked only through that subscription's expiry.
+Locked premium tiles use a blurred/locked placeholder without returning the
+image URL. Admins manage the gallery at `/admin/gallery`, where images can be
+uploaded in bulk, marked free or premium, paginated, or deleted individually
+and in bulk. Gallery uploads use the same Storj S3-compatible settings and
+5 MB image limits as profile images.

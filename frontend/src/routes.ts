@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import type { User } from "./types/common/user";
 import { ProfilePage } from "./pages/profile";
 import { PricingPage } from "./pages/pricing";
+import { GalleryPage } from "./pages/gallery";
+import { AdminGalleryPage } from "./pages/admin/gallery";
 
 
 export const userContext = createContext<User | null>(null);
@@ -51,6 +53,7 @@ export const router = createBrowserRouter([
       },
       { path: "register", Component: Register },
       { path: "login", Component: Login },
+      { path: "gallary", Component: GalleryPage },
       {
         path: "user",
         Component: PrimaryLayout,
@@ -108,6 +111,10 @@ export const router = createBrowserRouter([
           {
             path: "plans",
             Component: Plan,
+          },
+          {
+            path: "gallery",
+            Component: AdminGalleryPage,
           },
         ],
       },

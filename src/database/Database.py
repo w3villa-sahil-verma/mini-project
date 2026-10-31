@@ -1,4 +1,5 @@
 from sqlalchemy import text
+from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -69,6 +70,39 @@ class Database:
             await conn.run_sync(
                 Base.metadata.create_all
             )
+            image_asset_columns = await conn.run_sync(
+                lambda sync_conn: {
+                    column["name"]
+                    for column in inspect(sync_conn).get_columns("image_assets")
+                }
+            )
+            if "is_gallery" not in image_asset_columns:
+                await conn.execute(
+                    text(
+                        "ALTER TABLE image_assets "
+                        "ADD COLUMN is_gallery BOOLEAN NOT NULL DEFAULT FALSE"
+                    )
+                )
+            if "is_premium" not in image_asset_columns:
+                await conn.execute(
+                    text(
+                        "ALTER TABLE image_assets "
+                        "ADD COLUMN is_premium BOOLEAN NOT NULL DEFAULT FALSE"
+                    )
+                )
+            image_asset_indexes = await conn.run_sync(
+                lambda sync_conn: {
+                    index["name"]
+                    for index in inspect(sync_conn).get_indexes("image_assets")
+                }
+            )
+            if "ix_image_assets_is_gallery" not in image_asset_indexes:
+                await conn.execute(
+                    text(
+                        "CREATE INDEX ix_image_assets_is_gallery "
+                        "ON image_assets (is_gallery)"
+                    )
+                )
 
         # 5. Create session factory
         self.AsyncSessionLocal: async_sessionmaker | None = async_sessionmaker(

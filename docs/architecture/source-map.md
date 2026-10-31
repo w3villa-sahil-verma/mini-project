@@ -90,6 +90,17 @@ endpoint verifies the stored object before selecting it as the user's profile
 image. Profile reads return the configured public URL or a fresh signed GET
 URL.
 
+## Gallery Access Flow
+
+The public `/gallary` page fetches paginated gallery items and requests more
+when its scroll sentinel becomes visible. The public gallery API returns free
+image URLs to anyone. Premium image URLs are returned only when the request
+has a valid session with an active subscription; their signed GET lifetime is
+bounded by the remaining subscription time. Otherwise the UI renders a locked,
+blurred placeholder without exposing the source URL. Admin gallery management
+uses the authenticated `/admin/gallery` routes to upload directly to Storj,
+toggle premium status, paginate, and selectively or bulk delete images.
+
 ---
 
 ## Feature Structure
