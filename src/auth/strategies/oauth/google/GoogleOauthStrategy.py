@@ -5,7 +5,7 @@ class GoogleOauthStrategy(OauthStrategy):
 
     def __init__(self) -> None:
         self.CLIENT_ID = settings.GOOGLE_CLIENT_ID
-        self._CLIENT_SECREATE = settings.GOOGLE_CLIENT_SECREATE # should be private member
+        self._CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
         self.REDIRECT_URL = ""
         self.SCOPS = "openid email profile"
 

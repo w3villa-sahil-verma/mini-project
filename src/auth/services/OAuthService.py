@@ -3,19 +3,18 @@ import logging
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Annotated, Literal
 from urllib.parse import urlencode
 
 import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.token.JwtService import JwtTokenService
+from src.core.settings import settings
 from src.common.token.constants import TOKEN_TYPES
 from src.database.Database import getAsyncDbSession
 from src.models.OAuthIdentity import OAuthIdentity
@@ -24,30 +23,7 @@ from src.models.User import User
 OAuthProvider = Literal["google", "facebook"]
 OAUTH_STATE_MAX_AGE_SECONDS = 600
 ACCESS_TOKEN_LIFETIME = timedelta(days=1)
-FACEBOOK_GRAPH_VERSION_DEFAULT = "v24.0"
 logger = logging.getLogger(__name__)
-
-
-class OAuthSettings(BaseSettings):
-    google_client_id: str = ""
-    google_client_secret: str = ""
-    google_redirect_uri: str = (
-        "http://localhost:8000/api/v1/auth/oauth/google/callback"
-    )
-    facebook_app_id: str = ""
-    facebook_app_secret: str = ""
-    facebook_redirect_uri: str = (
-        "http://localhost:8000/api/v1/auth/oauth/facebook/callback"
-    )
-    facebook_graph_version: str = FACEBOOK_GRAPH_VERSION_DEFAULT
-    frontend_base_url: str = "http://localhost:5173"
-    oauth_cookie_secure: bool = True
-
-    model_config = SettingsConfigDict(
-        env_file=Path(__file__).resolve().parents[2] / ".env",
-        extra="ignore",
-    )
-
 
 @dataclass(frozen=True)
 class ProviderConfig:
@@ -68,7 +44,7 @@ class OAuthService:
     ) -> None:
         self.db = db
         self.token_service = token_service
-        self.settings = OAuthSettings()
+        self.settings = settings
 
     def get_meta(self) -> dict:
         providers = []
@@ -104,7 +80,7 @@ class OAuthService:
             value=state,
             max_age=OAUTH_STATE_MAX_AGE_SECONDS,
             httponly=True,
-            secure=self.settings.oauth_cookie_secure,
+            secure=self.settings.OAUTH_COOKIE_SECURE,
             samesite="lax",
             path="/",
         )
@@ -141,13 +117,13 @@ class OAuthService:
             return self._failed_callback(provider)
 
         response = RedirectResponse(
-            url=self.settings.frontend_base_url.rstrip("/"),
+            url=self.settings.FRONTEND_BASE_URL.rstrip("/"),
             status_code=status.HTTP_302_FOUND,
         )
         response.delete_cookie(
             key=self._state_cookie_name(provider),
             httponly=True,
-            secure=self.settings.oauth_cookie_secure,
+            secure=self.settings.OAUTH_COOKIE_SECURE,
             samesite="lax",
             path="/",
         )
@@ -155,7 +131,7 @@ class OAuthService:
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=self.settings.oauth_cookie_secure,
+            secure=self.settings.OAUTH_COOKIE_SECURE,
             samesite="lax",
             max_age=int(ACCESS_TOKEN_LIFETIME.total_seconds()),
             path="/",
@@ -332,29 +308,29 @@ class OAuthService:
 
     def _provider_config(self, provider: OAuthProvider) -> ProviderConfig:
         if provider == "google":
-            client_id = self.settings.google_client_id
-            client_secret = self.settings.google_client_secret
+            client_id = self.settings.GOOGLE_CLIENT_ID
+            client_secret = self.settings.GOOGLE_CLIENT_SECRET
             config = ProviderConfig(
                 client_id=client_id,
                 client_secret=client_secret,
-                redirect_uri=self.settings.google_redirect_uri,
+                redirect_uri=self.settings.GOOGLE_REDIRECT_URI,
                 authorization_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
                 token_endpoint="https://oauth2.googleapis.com/token",
                 profile_endpoint="https://openidconnect.googleapis.com/v1/userinfo",
                 scope="openid email profile",
             )
         else:
-            client_id = self.settings.facebook_app_id
-            client_secret = self.settings.facebook_app_secret
+            client_id = self.settings.FACEBOOK_APP_ID
+            client_secret = self.settings.FACEBOOK_APP_SECRET
             graph_base = (
                 f"https://graph.facebook.com/"
-                f"{self.settings.facebook_graph_version.strip('/')}"
+                f"{self.settings.FACEBOOK_GRAPH_VERSION.strip('/')}"
             )
             config = ProviderConfig(
                 client_id=client_id,
                 client_secret=client_secret,
-                redirect_uri=self.settings.facebook_redirect_uri,
-                authorization_endpoint=f"https://www.facebook.com/{self.settings.facebook_graph_version}/dialog/oauth",
+                redirect_uri=self.settings.FACEBOOK_REDIRECT_URI,
+                authorization_endpoint=f"https://www.facebook.com/{self.settings.FACEBOOK_GRAPH_VERSION}/dialog/oauth",
                 token_endpoint=f"{graph_base}/oauth/access_token",
                 profile_endpoint=f"{graph_base}/me",
                 scope="email,public_profile",
@@ -369,13 +345,13 @@ class OAuthService:
 
     def _failed_callback(self, provider: OAuthProvider) -> RedirectResponse:
         response = RedirectResponse(
-            url=f"{self.settings.frontend_base_url.rstrip('/')}/login?oauth_error=1",
+            url=f"{self.settings.FRONTEND_BASE_URL.rstrip('/')}/login?oauth_error=1",
             status_code=status.HTTP_302_FOUND,
         )
         response.delete_cookie(
             key=self._state_cookie_name(provider),
             httponly=True,
-            secure=self.settings.oauth_cookie_secure,
+            secure=self.settings.OAUTH_COOKIE_SECURE,
             samesite="lax",
             path="/",
         )

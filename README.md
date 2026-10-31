@@ -1,5 +1,13 @@
 # Image Gallery
 
+## Backend configuration
+
+Copy the root `.env.example` to `<project-root>/.env`. Backend configuration
+is loaded through `src/core/settings.py`; process environment variables override
+values from that file. Blank optional SMTP values stay unset, and blank
+numeric/boolean mail settings use their defaults. Keep secrets in the ignored
+root `.env` file and never commit it.
+
 ## Razorpay payments
 
 Set `ROZAR_PAY_API_KEY` in both `frontend/.env` and `src/.env`, and set

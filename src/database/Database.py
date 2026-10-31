@@ -8,30 +8,24 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.ext.asyncio.engine import AsyncEngine
 
 from src.database.Base import Base
+from src.core.settings import settings
 
 
 class Database:
     def __init__(self):
-        DATABASE_USER = "root"
-        DATABASE_PASSWORD = "admin"
-        DATABASE_HOST = "localhost"
-        DATABASE_PORT = "3306"
-        DATABASE_NAME = "gym_management"
-        DATABASE_DRIVER = "mysql+aiomysql"
-
-        self.DATABASE_NAME = DATABASE_NAME
+        self.DATABASE_NAME = settings.DATABASE_NAME
 
         # URL WITHOUT database name
         self.DATABASE_URL = (
-            f"{DATABASE_DRIVER}://"
-            f"{DATABASE_USER}:{DATABASE_PASSWORD}@"
-            f"{DATABASE_HOST}:{DATABASE_PORT}"
+            f"{settings.DATABASE_DRIVER}://"
+            f"{settings.DATABASE_USER}:{settings.DATABASE_PASSWORD}@"
+            f"{settings.DATABASE_HOST}:{settings.DATABASE_PORT}"
         )
         self.DATABASE_URL_WITH_DB = (
-            f"{DATABASE_DRIVER}://"
-            f"{DATABASE_USER}:{DATABASE_PASSWORD}@"
-            f"{DATABASE_HOST}:{DATABASE_PORT}/"
-            f"{DATABASE_NAME}"
+            f"{settings.DATABASE_DRIVER}://"
+            f"{settings.DATABASE_USER}:{settings.DATABASE_PASSWORD}@"
+            f"{settings.DATABASE_HOST}:{settings.DATABASE_PORT}/"
+            f"{settings.DATABASE_NAME}"
         )
 
         self.engine: AsyncEngine | None = None

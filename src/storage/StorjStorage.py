@@ -1,6 +1,4 @@
 import asyncio
-import os
-from pathlib import Path
 from urllib.parse import quote, urlsplit
 
 import boto3
@@ -8,10 +6,17 @@ from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import HTTPException, status
 
+from src.core.settings import settings
+
 
 class StorjStorage:
     def __init__(self) -> None:
-        self._settings = self._load_settings()
+        self._endpoint = settings.STORJ_S3_ENDPOINT
+        self._access_key = settings.STORJ_ACCESS_KEY
+        self._secret_key = settings.STORJ_SECRET_KEY
+        self._bucket = settings.STORJ_BUCKET
+        self._region = settings.STORJ_REGION
+        self._public_base_url = settings.STORJ_PUBLIC_BASE_URL.rstrip("/")
 
     async def create_upload_url(self, object_key: str, content_type: str) -> str:
         client, bucket = self._get_client_and_bucket()
@@ -113,10 +118,10 @@ class StorjStorage:
             ) from error
 
     def public_url(self, object_key: str) -> str | None:
-        base_url = self._settings["public_base_url"]
+        base_url = self._public_base_url
         if not base_url:
             return None
-        bucket = self._settings["bucket"]
+        bucket = self._bucket
         if not bucket:
             return None
         path_segments = [
@@ -132,13 +137,9 @@ class StorjStorage:
         )
 
     def _get_client_and_bucket(self) -> tuple[BaseClient, str]:
-        endpoint = self._settings["endpoint"]
-        access_key = self._settings["access_key"]
-        secret_key = self._settings["secret_key"]
-        bucket = self._settings["bucket"]
-        region = self._settings["region"]
-
-        if not all((endpoint, access_key, secret_key, bucket)):
+        if not all(
+            (self._endpoint, self._access_key, self._secret_key, self._bucket)
+        ):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Image storage is not configured.",
@@ -146,41 +147,9 @@ class StorjStorage:
 
         client = boto3.client(
             "s3",
-            endpoint_url=endpoint,
-            aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key,
-            region_name=region,
+            endpoint_url=self._endpoint,
+            aws_access_key_id=self._access_key,
+            aws_secret_access_key=self._secret_key,
+            region_name=self._region,
         )
-        return client, bucket
-
-    @staticmethod
-    def _load_settings() -> dict[str, str]:
-        settings = {
-            "endpoint": os.getenv("STORJ_S3_ENDPOINT", ""),
-            "access_key": os.getenv("STORJ_ACCESS_KEY", ""),
-            "secret_key": os.getenv("STORJ_SECRET_KEY", ""),
-            "bucket": os.getenv("STORJ_BUCKET", ""),
-            "region": os.getenv("STORJ_REGION", "us-east-1"),
-            "public_base_url": os.getenv("STORJ_PUBLIC_BASE_URL", "").rstrip("/"),
-        }
-
-        env_file = Path(__file__).resolve().parents[1] / ".env"
-        if env_file.is_file():
-            for line in env_file.read_text(encoding="utf-8").splitlines():
-                key, separator, value = line.partition("=")
-                if not separator:
-                    continue
-                normalized_key = key.strip()
-                setting_name = {
-                    "STORJ_S3_ENDPOINT": "endpoint",
-                    "STORJ_ACCESS_KEY": "access_key",
-                    "STORJ_SECRET_KEY": "secret_key",
-                    "STORJ_BUCKET": "bucket",
-                    "STORJ_REGION": "region",
-                    "STORJ_PUBLIC_BASE_URL": "public_base_url",
-                }.get(normalized_key)
-                if setting_name and not settings[setting_name]:
-                    settings[setting_name] = value.strip().strip("\"'")
-
-        settings["public_base_url"] = settings["public_base_url"].rstrip("/")
-        return settings
+        return client, self._bucket

@@ -3,31 +3,17 @@ import base64
 import hashlib
 import hmac
 import json
-import os
-from functools import lru_cache
-from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from fastapi import HTTPException, status
 
+from src.core.settings import settings
 
-@lru_cache(maxsize=1)
+
 def _payment_credentials() -> tuple[str, str]:
-    values = {
-        "ROZAR_PAY_API_KEY": os.getenv("ROZAR_PAY_API_KEY"),
-        "ROZAR_PAY_SECRET": os.getenv("ROZAR_PAY_SECRET"),
-    }
-
-    env_file = Path(__file__).resolve().parents[2] / ".env"
-    if env_file.is_file():
-        for line in env_file.read_text(encoding="utf-8").splitlines():
-            key, separator, value = line.partition("=")
-            if separator and key.strip() in values and not values[key.strip()]:
-                values[key.strip()] = value.strip().strip("\"'")
-
-    api_key = values["ROZAR_PAY_API_KEY"]
-    secret = values["ROZAR_PAY_SECRET"]
+    api_key = settings.ROZAR_PAY_API_KEY
+    secret = settings.ROZAR_PAY_SECRET
     if not api_key or not secret:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
