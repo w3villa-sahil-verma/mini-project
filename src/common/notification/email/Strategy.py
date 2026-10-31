@@ -7,8 +7,8 @@ from fastapi_mail import (
 )
 from pydantic import SecretStr
 
-from src.common.notification.ABC_NotificationStrategy import NotificationStrategy;
-from src.common.notification.Notification import Notification;
+from src.common.notification.ABC_NotificationStrategy import NotificationStrategy
+from src.common.notification.Notification import Notification
 from src.common.notification.email.config import settings
 
 
@@ -16,6 +16,9 @@ class EmailNotificationStrategy(NotificationStrategy):
     """Email implementation of the notification strategy."""
 
     def __init__(self):
+        if not settings.MAIL_FROM:
+            raise ValueError("MAIL_FROM must be configured to send email through SMTP.")
+
         conf = ConnectionConfig(
             MAIL_USERNAME=settings.MAIL_USERNAME,
             MAIL_PASSWORD=SecretStr(settings.MAIL_PASSWORD),
@@ -32,10 +35,10 @@ class EmailNotificationStrategy(NotificationStrategy):
 
     async def send(self, notification: Notification) -> None:
         message = MessageSchema(
-                    subject=notification.subject,
-                    recipients=[NameEmail(name="", email=notification.recipient)],
-                    body=notification.body,
-                    subtype=MessageType.html,
-                )
+            subject=notification.subject,
+            recipients=[NameEmail(name="", email=notification.recipient)],
+            body=notification.body,
+            subtype=MessageType.html,
+        )
 
         await self.mailer.send_message(message)

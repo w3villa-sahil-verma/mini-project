@@ -13,10 +13,32 @@ For Render, use the repository root as the service root directory,
 `uvicorn src.Application:app --host 0.0.0.0 --port $PORT` as the start command.
 Configure production secrets and service URLs as Render environment variables.
 
+### Email delivery
+
+Render's free service can use the Google Apps Script email strategy instead of
+SMTP. Paste the `doPost(e)` handler into a Google Apps Script project and deploy
+it as a web app that executes as your account and is accessible to anyone. Set
+its `EMAIL_API_SECRET` under **Project Settings → Script properties**. The
+handler checks the shared secret before sending; keep that secret private.
+
+Set these Render environment variables:
+
+```dotenv
+EMAIL_PROVIDER=google_apps_script
+GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec
+EMAIL_API_SECRET=<same-secret-as-the-script-property>
+```
+
+The backend sends `to`, `subject`, `text`, and `html` JSON fields and follows
+Google's web-app redirect when reading the response. A rejected request,
+non-success response, or transport failure is reported rather than silently
+falling back to SMTP. To use SMTP instead, set `EMAIL_PROVIDER=smtp` and
+configure the `MAIL_*` variables.
+
 For the deployed Vercel frontend and Render API, configure:
 
 - **Vercel environment variable:** `VITE_BACKEND_BASE_URL=https://mini-project-5goq.onrender.com`
-- **Render environment variables:** `CORS_ALLOWED_ORIGINS=https://mini-project-gules-sigma.vercel.app`, `FRONTEND_BASE_URL=https://mini-project-gules-sigma.vercel.app`, `OAUTH_COOKIE_SECURE=true`, and `AUTH_COOKIE_SAMESITE=none`
+- **Render environment variables:** `BACKEND_BASE_URL=https://mini-project-5goq.onrender.com`, `CORS_ALLOWED_ORIGINS=https://mini-project-gules-sigma.vercel.app`, `FRONTEND_BASE_URL=https://mini-project-gules-sigma.vercel.app`, `OAUTH_COOKIE_SECURE=true`, and `AUTH_COOKIE_SAMESITE=none`
 - **Google and Facebook OAuth redirect URIs:** `https://mini-project-5goq.onrender.com/api/v1/auth/oauth/google/callback` and `https://mini-project-5goq.onrender.com/api/v1/auth/oauth/facebook/callback`
 
 The frontend API client sends credentials, so CORS must use the exact Vercel
@@ -46,13 +68,19 @@ user's memberships can be read from `GET /api/v1/payments/subscriptions/me`.
 ## Google and Facebook sign-in
 
 Set the provider credentials and callback URLs in the root `.env` file (see
-the root `.env.example`). In the Google Cloud and Meta developer consoles, register
-the corresponding callback URLs exactly:
+the root `.env.example`). For production, set `BACKEND_BASE_URL` on Render and
+register these callback URLs exactly in the Google Cloud and Meta developer
+consoles:
 
 ```text
-http://localhost:8000/api/v1/auth/oauth/google/callback
-http://localhost:8000/api/v1/auth/oauth/facebook/callback
+https://mini-project-5goq.onrender.com/api/v1/auth/oauth/google/callback
+https://mini-project-5goq.onrender.com/api/v1/auth/oauth/facebook/callback
 ```
+
+The OAuth service derives each callback URL from `BACKEND_BASE_URL` unless the
+provider-specific `GOOGLE_REDIRECT_URI` or `FACEBOOK_REDIRECT_URI` is explicitly
+set. Do not leave either override set to localhost in Render. For local
+development, the default backend URL is `http://localhost:8000`.
 
 The login and registration pages send users to
 `GET /api/v1/auth/oauth/{google|facebook}`. The backend stores a short-lived,

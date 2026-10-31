@@ -11,6 +11,7 @@ from src.common.token.constants import TOKEN_TYPES;
 from src.common.security.HashingService import HashingService
 from src.common.notification.NotificationService import NotificationService
 from src.common.notification.Notification import Notification;
+from src.core.settings import settings
 from src.common.decorators.EmailCheck import check_email_exists
 from src.auth.strategies.ABC_Registration import Registration;
 from src.database.Database import getAsyncDbSession
@@ -45,7 +46,10 @@ class JwtBasedRegistration(Registration):
             await self.notificationService.send(Notification(
                 recipient=email,
                 subject="GYM Registration mail",
-                body=f"http://localhost:5173/register?token={token}"
+                body=(
+                    f"{settings.FRONTEND_BASE_URL.rstrip('/')}"
+                    f"/register?token={token}"
+                ),
             ))
     
             return {

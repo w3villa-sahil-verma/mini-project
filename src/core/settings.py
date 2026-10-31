@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     MAIL_SERVER: str = "smtp.gmail.com"
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
+    EMAIL_PROVIDER: Literal["smtp", "google_apps_script"] = "smtp"
+    GOOGLE_SCRIPT_URL: str = ""
+    EMAIL_API_SECRET: str = ""
 
     ROZAR_PAY_API_KEY: str = ""
     ROZAR_PAY_SECRET: str = ""
