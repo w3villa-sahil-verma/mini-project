@@ -1,11 +1,13 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, Response, Body
+from fastapi import APIRouter, Depends, Request, Response
 from typing import Annotated
+from typing import Literal
 from pydantic import BaseModel
 
 from src.auth.controller.Controller import AuthController
+from src.auth.services.OAuthService import OAuthService
 from src.middlewares.authorization import require_access_token
 
 
@@ -51,15 +53,33 @@ def getRouter()->APIRouter:
 
     @router.get("/oauth/meta")
     async def oauthMeta(
-        authController: Annotated[AuthController, Depends(AuthController)],
+        oauth_service: Annotated[OAuthService, Depends(OAuthService)],
     ):
-        return await authController.getOauthMeta();
+        return oauth_service.get_meta()
 
-    @router.post("/oauth/login")
-    async def oauthLogin(
-        authController: Annotated[AuthController, Depends(AuthController)],
+    @router.get("/oauth/{provider}")
+    async def oauthStart(
+        provider: Literal["google", "facebook"],
+        oauth_service: Annotated[OAuthService, Depends(OAuthService)],
     ):
-        pass;
+        return oauth_service.start(provider)
+
+    @router.get("/oauth/{provider}/callback")
+    async def oauthCallback(
+        provider: Literal["google", "facebook"],
+        request: Request,
+        oauth_service: Annotated[OAuthService, Depends(OAuthService)],
+        code: str | None = None,
+        state: str | None = None,
+        error: str | None = None,
+    ):
+        return await oauth_service.callback(
+            provider,
+            code=code,
+            state=state,
+            stored_state=request.cookies.get(f"oauth_state_{provider}"),
+            provider_error=error,
+        )
 
     @router.get("/logout")
     async def logout(
@@ -89,4 +109,3 @@ def getRouter()->APIRouter:
         }
                 
     return router;
-

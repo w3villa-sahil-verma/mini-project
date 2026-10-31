@@ -101,6 +101,17 @@ blurred placeholder without exposing the source URL. Admin gallery management
 uses the authenticated `/admin/gallery` routes to upload directly to Storj,
 toggle premium status, paginate, and selectively or bulk delete images.
 
+## OAuth Authentication Flow
+
+The login and registration pages share `OAuthButtons` and navigate to the
+backend provider-start endpoint. The auth routes delegate to `OAuthService`,
+which redirects to Google or Facebook with a random state value stored in an
+HTTP-only cookie. On callback, the service validates state, exchanges the
+authorization code server-side, fetches provider identity/email, creates or
+finds a normal `User`, persists provider identifiers in `OAuthIdentity`, and
+sets the same HTTP-only access-token cookie used by password login. Provider
+client secrets remain backend-only.
+
 ---
 
 ## Feature Structure

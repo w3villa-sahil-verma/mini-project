@@ -16,12 +16,14 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router";
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 import { handleFetch } from "@/hooks/useFetch";
 import { useRevalidator } from "react-router";
 import type { CommonResponse } from "@/types/common/request";
+import { OAuthButtons } from "@/components/oauth-buttons";
+import { useSearchParams } from "react-router";
 
 type RequestPayload = {
   email: string;
@@ -34,12 +36,22 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const navigate = useNavigate();
   const revalidate = useRevalidator();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [requestPayload, setRequestPayload] = useState<RequestPayload>({
     email: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("oauth_error") !== "1") return;
+    toast.error("Sign-in with the selected provider failed. Please try again.");
+    setSearchParams((current) => {
+      current.delete("oauth_error");
+      return current;
+    }, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -118,9 +130,8 @@ export function LoginForm({
                 <Button type="submit" disabled={loading}>
                   Login
                 </Button>
-                <Button variant="outline" type="button">
-                  Login with Google
-                </Button>
+                <FieldDescription className="text-center">Or continue with</FieldDescription>
+                <OAuthButtons />
                 <FieldDescription className="text-center">
                   Don&apos;t have an account? <a href="#">Sign up</a>
                 </FieldDescription>

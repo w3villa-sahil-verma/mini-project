@@ -15,6 +15,28 @@ the signature before activating or scheduling the membership. A new paid plan
 is scheduled after any existing active or scheduled membership. The signed-in
 user's memberships can be read from `GET /api/v1/payments/subscriptions/me`.
 
+## Google and Facebook sign-in
+
+Set the provider credentials and callback URLs in `src/.env` (see
+`src/.env.example`). In the Google Cloud and Meta developer consoles, register
+the corresponding callback URLs exactly:
+
+```text
+http://localhost:8000/api/v1/auth/oauth/google/callback
+http://localhost:8000/api/v1/auth/oauth/facebook/callback
+```
+
+The login and registration pages send users to
+`GET /api/v1/auth/oauth/{google|facebook}`. The backend stores a short-lived,
+HTTP-only OAuth state cookie, exchanges the authorization code server-side,
+and creates or finds a user before setting the normal HTTP-only
+`access_token` cookie. New provider emails create a regular user account.
+Google email must be provider-verified. Facebook sign-in requires an email;
+Facebook is not automatically linked to an existing account by email. The
+callback redirects successful users to the frontend home page. Use
+`OAUTH_COOKIE_SECURE=true` with HTTPS in production; the example disables the
+secure-cookie flag for local HTTP development.
+
 ## Admin dashboard
 
 The admin dashboard reads its overview from

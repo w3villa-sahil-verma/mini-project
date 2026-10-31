@@ -47,26 +47,6 @@ class AuthController:
             }
         }
 
-    async def oauthLogin(self, accessToken: str):
-
-        result = self.authService.oauthAuthenticate(accessToken=accessToken)
-
-        # Backend's Acces Token
-        return {
-            "message" : "success",
-            "data" : result
-        }
-
-    async def getOauthMeta(self):
-
-        result = await self.authService.getOauthMeta();
-
-        # CLIENT_ID + REDIRECT_URL + SCOPE
-        return {
-            "message" : "success",
-            "data" : result
-        }
-    
     async def logout(self, response: Response):
 
         # remove accesstoken from http-only-cookie
