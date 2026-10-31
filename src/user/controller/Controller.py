@@ -271,7 +271,7 @@ class UserController:
         )
         if image is None:
             return None
-        return await self.storage.get_image_url(image.object_key, image.public_url)
+        return await self.storage.get_image_url(image.object_key)
 
     @staticmethod
     def _serialize_profile(

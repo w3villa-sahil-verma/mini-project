@@ -446,6 +446,7 @@ export function ProfilePage() {
   const [profile, setProfile] = useState<Profile>(INITIAL_PROFILE);
   const [membership, setMembership] = useState<Membership>(null);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [profileImageFailed, setProfileImageFailed] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
@@ -478,6 +479,7 @@ export function ProfilePage() {
     setProfile(nextProfile);
     setMembership(data.membership);
     setProfileImageUrl(data.profile_image_url);
+    setProfileImageFailed(false);
     setSearch([nextProfile.street, nextProfile.city].filter(Boolean).join(", "));
   }, []);
 
@@ -619,6 +621,7 @@ export function ProfilePage() {
         method: "POST",
       });
       setProfileImageUrl(completedResponse.data.image_url);
+      setProfileImageFailed(false);
       toast.success("Profile image updated.");
     } catch (error) {
       toast.error(
@@ -672,6 +675,7 @@ export function ProfilePage() {
               <AvatarImage
                 src={profileImageUrl ?? undefined}
                 alt={`${profile.fullName || "Profile"} profile`}
+                onError={() => setProfileImageFailed(true)}
               />
               <AvatarFallback className="text-lg">
                 {initials(profile.fullName)}
@@ -695,6 +699,11 @@ export function ProfilePage() {
               <Upload className="size-4" />
               {uploadingImage ? "Uploading..." : "Change photo"}
             </Button>
+            {profileImageFailed && (
+              <span className="max-w-40 text-center text-xs text-destructive" role="status">
+                Image URL could not be loaded.
+              </span>
+            )}
           </div>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">

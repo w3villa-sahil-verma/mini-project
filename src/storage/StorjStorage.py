@@ -1,7 +1,7 @@
 import asyncio
 import os
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 import boto3
 from botocore.client import BaseClient
@@ -71,7 +71,8 @@ class StorjStorage:
                 detail="Uploaded image metadata does not match the requested file.",
             )
 
-    async def get_image_url(self, object_key: str, public_url: str | None) -> str:
+    async def get_image_url(self, object_key: str) -> str:
+        public_url = self.public_url(object_key)
         if public_url:
             return public_url
 
@@ -93,7 +94,20 @@ class StorjStorage:
         base_url = self._settings["public_base_url"]
         if not base_url:
             return None
-        return f"{base_url}/{quote(object_key, safe='/')}"
+        bucket = self._settings["bucket"]
+        if not bucket:
+            return None
+        path_segments = [
+            segment
+            for segment in urlsplit(base_url).path.strip("/").split("/")
+            if segment
+        ]
+        if path_segments == ["raw"]:
+            return None
+        return (
+            f"{base_url}/{quote(bucket, safe='')}"
+            f"/{quote(object_key, safe='/')}"
+        )
 
     def _get_client_and_bucket(self) -> tuple[BaseClient, str]:
         endpoint = self._settings["endpoint"]

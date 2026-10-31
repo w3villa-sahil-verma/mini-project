@@ -90,8 +90,7 @@ class UploadController:
                 "data": {
                     "image_id": image.id,
                     "image_url": await self.storage.get_image_url(
-                        image.object_key,
-                        image.public_url,
+                        image.object_key
                     ),
                 },
             }
@@ -131,8 +130,7 @@ class UploadController:
             "data": {
                 "image_id": image.id,
                 "image_url": await self.storage.get_image_url(
-                    image.object_key,
-                    image.public_url,
+                    image.object_key
                 ),
             },
         }

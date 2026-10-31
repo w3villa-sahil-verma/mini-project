@@ -76,6 +76,9 @@ are accepted.
 
 Storj credentials never leave the backend. Configure the bucket's CORS policy
 to allow the frontend origin to send `PUT` requests with the `Content-Type`
-header. For public image delivery, set `STORJ_PUBLIC_BASE_URL` to the public
-URL prefix for objects in the bucket. Leave it empty for private buckets; the
-backend then generates a one-hour signed GET URL when returning the profile.
+header. For public image delivery, set `STORJ_PUBLIC_BASE_URL` to the Storj Linksharing
+prefix including the access grant, for example
+`https://link.storjshare.io/raw/<ACCESS_GRANT>`. The bucket and object key are
+appended by the backend. A bare `/raw` URL is not sufficient and falls back to
+a one-hour signed GET URL. Leave it empty for private buckets; the backend then
+generates a one-hour signed GET URL when returning the profile.
