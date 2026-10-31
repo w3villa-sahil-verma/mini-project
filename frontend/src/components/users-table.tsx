@@ -25,7 +25,6 @@ const userSchema = z.object({
   updated_at: z.string(),
 });
 
-type User = z.infer<typeof userSchema>;
 const userListSchema = z.object({
   items: z.array(userSchema),
   total: z.number(),
