@@ -64,11 +64,7 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            loader: () => redirect("dashboard"),
-          },
-          {
-            path: "dashboard",
-            Component: Dashboard,
+            loader: () => redirect("pricing"),
           },
           {
             path: "profile",

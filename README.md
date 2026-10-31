@@ -37,3 +37,11 @@ submits its callback to `POST /api/v1/payments/verify`; the backend verifies
 the signature before activating or scheduling the membership. A new paid plan
 is scheduled after any existing active or scheduled membership. The signed-in
 user's memberships can be read from `GET /api/v1/payments/subscriptions/me`.
+
+## Admin dashboard
+
+The admin dashboard reads its overview from
+`GET /api/v1/admin/dashboard`. The admin-only endpoint returns plan and user
+totals, active subscriptions, monthly user-registration and subscription
+counts for the last 12 months, recent users, plan details, and upcoming
+subscription expirations.

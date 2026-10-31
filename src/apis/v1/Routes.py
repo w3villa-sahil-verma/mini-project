@@ -1,7 +1,7 @@
 
 from fastapi import APIRouter, Depends;
 
-
+from src.admin.routes.DashboardRoutes import getRouter as dashboardRouter;
 from src.auth.routes.Routes import getRouter as authRouter;
 from src.payment.routes.Routes import getRouter as paymentRouter;
 from src.plan.routes.Routes import getPricingRouter, getRouter as planRouter;
@@ -24,6 +24,7 @@ admin_router: APIRouter = APIRouter(
 # include other routes below
 admin_router.include_router(planRouter());
 admin_router.include_router(userRouter());
+admin_router.include_router(dashboardRouter());
 
 router.include_router(authRouter());
 router.include_router(paymentRouter());
