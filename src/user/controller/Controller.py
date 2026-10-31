@@ -13,6 +13,8 @@ from src.models.User import User
 from src.models.UserProfile import UserProfile
 from src.models.Plan import Plan
 from src.models.Subscription import Subscription
+from src.models.ImageAsset import ImageAsset
+from src.storage.StorjStorage import StorjStorage
 
 
 class ProfileUpdate(BaseModel):
@@ -50,8 +52,10 @@ class UserController:
     def __init__(
         self,
         db: Annotated[AsyncSession, Depends(getAsyncDbSession)],
+        storage: Annotated[StorjStorage, Depends(StorjStorage)],
     ):
         self.db = db
+        self.storage = storage
 
     async def get_all(self):
         result = await self.db.scalars(
@@ -103,10 +107,16 @@ class UserController:
         user = await self._get_active_user(user_id)
         profile = await self._get_user_profile(user_id)
         membership = await self._get_membership_summary(user_id)
+        profile_image_url = await self._get_profile_image_url(user_id)
 
         return {
             "message": "Profile retrieved successfully",
-            "data": self._serialize_profile(user, profile, membership),
+            "data": self._serialize_profile(
+                user,
+                profile,
+                membership,
+                profile_image_url,
+            ),
         }
 
     async def update_profile(self, user_id: int, payload: ProfileUpdate):
@@ -158,10 +168,16 @@ class UserController:
         await self.db.refresh(user)
         await self.db.refresh(profile)
         membership = await self._get_membership_summary(user_id)
+        profile_image_url = await self._get_profile_image_url(user_id)
 
         return {
             "message": "Profile updated successfully",
-            "data": self._serialize_profile(user, profile, membership),
+            "data": self._serialize_profile(
+                user,
+                profile,
+                membership,
+                profile_image_url,
+            ),
         }
 
     async def _get_active_user(self, user_id: int) -> User:
@@ -245,11 +261,24 @@ class UserController:
             "has_premium_access": status == "ACTIVE",
         }
 
+    async def _get_profile_image_url(self, user_id: int) -> str | None:
+        image = await self.db.scalar(
+            select(ImageAsset).where(
+                ImageAsset.user_id == user_id,
+                ImageAsset.is_profile_image.is_(True),
+                ImageAsset.status == "READY",
+            )
+        )
+        if image is None:
+            return None
+        return await self.storage.get_image_url(image.object_key, image.public_url)
+
     @staticmethod
     def _serialize_profile(
         user: User,
         profile: UserProfile | None,
         membership: dict | None,
+        profile_image_url: str | None,
     ) -> dict:
         return {
             "full_name": " ".join(
@@ -270,6 +299,7 @@ class UserController:
             "latitude": profile.latitude if profile else None,
             "longitude": profile.longitude if profile else None,
             "membership": membership,
+            "profile_image_url": profile_image_url,
         }
 
     @staticmethod

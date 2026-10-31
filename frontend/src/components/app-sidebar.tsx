@@ -14,7 +14,6 @@ import {
 import {
   IconDashboard,
   IconListDetails,
-  IconChartBar,
   IconFolder,
   IconUsers,
   IconInnerShadowTop,
@@ -29,24 +28,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const user_nav = [
     {
-      title: "Dashboard",
-      url: "/user/dashboard",
-      icon: <IconDashboard />,
+      title: "Pricing",
+      url: "/user/pricing",
+      icon: <IconFolder />,
     },
     {
       title: "Profile",
       url: "/user/profile",
       icon: <IconListDetails />,
     },
-    {
-      title: "Pricing",
-      url: "/user/pricing",
-      icon: <IconFolder />,
-    },
   ];
 
   const admin_nav = [
-     {
+    {
       title: "Dashboard",
       url: "/admin/dashboard",
       icon: <IconDashboard />,
@@ -66,12 +60,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/admin/users",
       icon: <IconUsers />,
     },
-  ]
+  ];
 
   const NAV = {
-    "USER" : user_nav,
-    "ADMIN" : admin_nav
-  }
+    USER: user_nav,
+    ADMIN: admin_nav,
+  };
 
   const data = {
     user: {
@@ -79,7 +73,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       email: user?.user_id || "m@example.com",
       avatar: "/avatars/shadcn.jpg",
     },
-    navMain: NAV[role]
+    navMain: NAV[role],
   };
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -90,7 +84,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuButton className="data-[slot=sidebar-menu-button]:p-1.5!">
                 <IconInnerShadowTop className="size-5!" />
                 <span className="text-base font-semibold">
-                  ABC Membership Managment
+                  Membership Managment
                 </span>
               </SidebarMenuButton>
             </SidebarMenuItem>

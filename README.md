@@ -52,3 +52,30 @@ in the shared plan catalog; expiration applies to the individual user's
 subscription. The profile reports whether the user currently has premium
 membership access, and the admin dashboard includes expired subscription
 counts and recent expirations.
+
+## Profile images with Storj
+
+Configure these values in `src/.env` (or as backend environment variables):
+
+```dotenv
+STORJ_S3_ENDPOINT=https://gateway.storjshare.io
+STORJ_ACCESS_KEY=your-storj-s3-access-key
+STORJ_SECRET_KEY=your-storj-s3-secret-key
+STORJ_BUCKET=your-bucket-name
+STORJ_REGION=us-east-1
+STORJ_PUBLIC_BASE_URL=
+```
+
+The authenticated `POST /api/v1/uploads/presign` endpoint accepts the file
+name, MIME type, and size, stores that metadata in `image_assets`, and returns
+a 60-second pre-signed PUT URL. The profile page uploads the image directly to
+Storj, then calls `POST /api/v1/uploads/{image_id}/complete`. The backend
+verifies the stored object's type and size before marking it ready and setting
+it as the user's current profile image. JPEG, PNG, and WebP files up to 5 MB
+are accepted.
+
+Storj credentials never leave the backend. Configure the bucket's CORS policy
+to allow the frontend origin to send `PUT` requests with the `Content-Type`
+header. For public image delivery, set `STORJ_PUBLIC_BASE_URL` to the public
+URL prefix for objects in the bucket. Leave it empty for private buckets; the
+backend then generates a one-hour signed GET URL when returning the profile.

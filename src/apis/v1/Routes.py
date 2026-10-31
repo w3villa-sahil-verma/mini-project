@@ -7,6 +7,7 @@ from src.payment.routes.Routes import getRouter as paymentRouter;
 from src.plan.routes.Routes import getPricingRouter, getRouter as planRouter;
 from src.user.routes.Routes import getProfileRouter as userProfileRouter;
 from src.user.routes.Routes import getRouter as userRouter;
+from src.uploads.routes.Routes import getRouter as uploadRouter;
 from src.middlewares.authorization import require_role
 from src.models.User import USER_ROLE
 
@@ -30,6 +31,7 @@ router.include_router(authRouter());
 router.include_router(paymentRouter());
 router.include_router(getPricingRouter());
 router.include_router(userProfileRouter());
+router.include_router(uploadRouter());
 router.include_router(admin_router);
 
 # router.include_router(other_router);

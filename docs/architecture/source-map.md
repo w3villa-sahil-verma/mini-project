@@ -79,6 +79,17 @@ Shared
 
 Infrastructure should remain at the boundary.
 
+## Profile Image Storage Flow
+
+`frontend/src/pages/profile/index.tsx` requests an upload URL from
+`src/uploads/routes/Routes.py`. `UploadController` validates the request and
+persists object metadata through `ImageAsset`, while `StorjStorage` creates a
+short-lived S3-compatible pre-signed URL using backend-only credentials. The
+browser sends the image bytes directly to Storj; the authenticated completion
+endpoint verifies the stored object before selecting it as the user's profile
+image. Profile reads return the configured public URL or a fresh signed GET
+URL.
+
 ---
 
 ## Feature Structure

@@ -16,9 +16,14 @@ import {
   MapPinOff,
   Search,
   TriangleAlert,
+  Upload,
 } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -57,6 +62,18 @@ type Membership = {
   has_premium_access: boolean;
 } | null;
 
+type ProfileImageUpload = {
+  image_id: number;
+  object_key: string;
+  upload_url: string;
+  expires_in: number;
+};
+
+type ProfileImageResult = {
+  image_id: number;
+  image_url: string;
+};
+
 const profileResponseSchema = z.object({
   full_name: z.string(),
   email: z.string(),
@@ -77,6 +94,7 @@ const profileResponseSchema = z.object({
       has_premium_access: z.boolean(),
     })
     .nullable(),
+  profile_image_url: z.string().nullable(),
 });
 
 type ProfileResponseData = z.infer<typeof profileResponseSchema>;
@@ -355,6 +373,12 @@ function initials(name: string) {
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
 
+function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    void handleFetch<T>(url, resolve, reject, init);
+  });
+}
+
 function downloadProfilePdf(profile: Profile) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const left = 56;
@@ -421,6 +445,9 @@ function downloadProfilePdf(profile: Profile) {
 export function ProfilePage() {
   const [profile, setProfile] = useState<Profile>(INITIAL_PROFILE);
   const [membership, setMembership] = useState<Membership>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -450,6 +477,7 @@ export function ProfilePage() {
     };
     setProfile(nextProfile);
     setMembership(data.membership);
+    setProfileImageUrl(data.profile_image_url);
     setSearch([nextProfile.street, nextProfile.city].filter(Boolean).join(", "));
   }, []);
 
@@ -554,6 +582,53 @@ export function ProfilePage() {
     );
   };
 
+  const handleProfileImageChange = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const presignResponse = await apiRequest<
+        CommonResponse<ProfileImageUpload>
+      >("/api/v1/uploads/presign", {
+        method: "POST",
+        body: JSON.stringify({
+          filename: file.name,
+          content_type: file.type,
+          size_bytes: file.size,
+        }),
+      });
+
+      const uploadResponse = await fetch(presignResponse.data.upload_url, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!uploadResponse.ok) {
+        throw new Error(
+          `Image storage rejected the upload (${uploadResponse.status}).`,
+        );
+      }
+
+      const completedResponse = await apiRequest<
+        CommonResponse<ProfileImageResult>
+      >(`/api/v1/uploads/${presignResponse.data.image_id}/complete`, {
+        method: "POST",
+      });
+      setProfileImageUrl(completedResponse.data.image_url);
+      toast.success("Profile image updated.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not upload profile image.",
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const mapOptions = useMemo(
     () => ({
       disableDefaultUI: true,
@@ -592,9 +667,35 @@ export function ProfilePage() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Avatar className="size-14">
-            <AvatarFallback className="text-lg">{initials(profile.fullName)}</AvatarFallback>
-          </Avatar>
+          <div className="flex flex-col items-center gap-2">
+            <Avatar className="size-16">
+              <AvatarImage
+                src={profileImageUrl ?? undefined}
+                alt={`${profile.fullName || "Profile"} profile`}
+              />
+              <AvatarFallback className="text-lg">
+                {initials(profile.fullName)}
+              </AvatarFallback>
+            </Avatar>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={handleProfileImageChange}
+              aria-label="Choose profile image"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploadingImage}
+              onClick={() => imageInputRef.current?.click()}
+            >
+              <Upload className="size-4" />
+              {uploadingImage ? "Uploading..." : "Change photo"}
+            </Button>
+          </div>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
               {profile.fullName || "Your profile"}
