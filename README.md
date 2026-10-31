@@ -45,3 +45,10 @@ The admin dashboard reads its overview from
 totals, active subscriptions, monthly user-registration and subscription
 counts for the last 12 months, recent users, plan details, and upcoming
 subscription expirations.
+
+The application checks subscription expirations once per minute and marks
+subscriptions with an elapsed `expires_at` as `EXPIRED`. Plans remain available
+in the shared plan catalog; expiration applies to the individual user's
+subscription. The profile reports whether the user currently has premium
+membership access, and the admin dashboard includes expired subscription
+counts and recent expirations.

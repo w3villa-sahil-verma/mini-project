@@ -49,6 +49,14 @@ type Profile = {
   location: google.maps.LatLngLiteral | null;
 };
 
+type Membership = {
+  plan_name: string;
+  status: "ACTIVE" | "SCHEDULED" | "EXPIRED";
+  starts_at: string | null;
+  expires_at: string | null;
+  has_premium_access: boolean;
+} | null;
+
 const profileResponseSchema = z.object({
   full_name: z.string(),
   email: z.string(),
@@ -60,6 +68,15 @@ const profileResponseSchema = z.object({
   country: z.string().nullable(),
   latitude: z.number().nullable(),
   longitude: z.number().nullable(),
+  membership: z
+    .object({
+      plan_name: z.string(),
+      status: z.enum(["ACTIVE", "SCHEDULED", "EXPIRED"]),
+      starts_at: z.string().nullable(),
+      expires_at: z.string().nullable(),
+      has_premium_access: z.boolean(),
+    })
+    .nullable(),
 });
 
 type ProfileResponseData = z.infer<typeof profileResponseSchema>;
@@ -403,6 +420,7 @@ function downloadProfilePdf(profile: Profile) {
 
 export function ProfilePage() {
   const [profile, setProfile] = useState<Profile>(INITIAL_PROFILE);
+  const [membership, setMembership] = useState<Membership>(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -431,6 +449,7 @@ export function ProfilePage() {
           : null,
     };
     setProfile(nextProfile);
+    setMembership(data.membership);
     setSearch([nextProfile.street, nextProfile.city].filter(Boolean).join(", "));
   }, []);
 
@@ -590,6 +609,43 @@ export function ProfilePage() {
           Download profile
         </Button>
       </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Membership</CardTitle>
+          <CardDescription>Your current plan and access status.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {membership ? (
+            <div className="grid gap-3 text-sm sm:grid-cols-3">
+              <div>
+                <p className="text-muted-foreground">Plan</p>
+                <p className="font-medium">{membership.plan_name}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Status</p>
+                <p className="font-medium">{membership.status}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Premium access</p>
+                <p className="font-medium">
+                  {membership.has_premium_access ? "Available" : "Unavailable"}
+                </p>
+              </div>
+              {membership.expires_at && (
+                <p className="text-muted-foreground sm:col-span-3">
+                  {membership.status === "EXPIRED" ? "Expired" : "Ends"}{" "}
+                  {new Date(membership.expires_at).toLocaleString()}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No active or previous membership.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Personal details */}

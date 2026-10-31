@@ -4,13 +4,15 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from pydantic import BaseModel, Field, field_validator, model_validator
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.Database import getAsyncDbSession
 from src.models.User import User
 from src.models.UserProfile import UserProfile
+from src.models.Plan import Plan
+from src.models.Subscription import Subscription
 
 
 class ProfileUpdate(BaseModel):
@@ -100,10 +102,11 @@ class UserController:
     async def get_profile(self, user_id: int):
         user = await self._get_active_user(user_id)
         profile = await self._get_user_profile(user_id)
+        membership = await self._get_membership_summary(user_id)
 
         return {
             "message": "Profile retrieved successfully",
-            "data": self._serialize_profile(user, profile),
+            "data": self._serialize_profile(user, profile, membership),
         }
 
     async def update_profile(self, user_id: int, payload: ProfileUpdate):
@@ -154,10 +157,11 @@ class UserController:
 
         await self.db.refresh(user)
         await self.db.refresh(profile)
+        membership = await self._get_membership_summary(user_id)
 
         return {
             "message": "Profile updated successfully",
-            "data": self._serialize_profile(user, profile),
+            "data": self._serialize_profile(user, profile, membership),
         }
 
     async def _get_active_user(self, user_id: int) -> User:
@@ -174,8 +178,79 @@ class UserController:
             select(UserProfile).where(UserProfile.user_id == user_id)
         )
 
+    async def _get_membership_summary(self, user_id: int) -> dict | None:
+        now = datetime.now(timezone.utc)
+        membership_query = (
+            select(Subscription, Plan.name)
+            .join(Plan, Plan.id == Subscription.plan_id)
+            .where(Subscription.user_id == user_id)
+        )
+
+        current_membership = (
+            await self.db.execute(
+                membership_query.where(
+                    Subscription.status == "ACTIVE",
+                    Subscription.starts_at <= now,
+                    Subscription.expires_at > now,
+                )
+                .order_by(Subscription.expires_at.desc())
+                .limit(1)
+            )
+        ).first()
+
+        if current_membership is not None:
+            subscription, plan_name = current_membership
+            status = "ACTIVE"
+        else:
+            current_membership = (
+                await self.db.execute(
+                    membership_query.where(
+                        Subscription.status == "SCHEDULED",
+                        Subscription.starts_at > now,
+                        Subscription.expires_at > now,
+                    )
+                    .order_by(Subscription.starts_at.asc())
+                    .limit(1)
+                )
+            ).first()
+            if current_membership is not None:
+                subscription, plan_name = current_membership
+                status = "SCHEDULED"
+            else:
+                current_membership = (
+                    await self.db.execute(
+                        membership_query.where(
+                            or_(
+                                Subscription.status == "EXPIRED",
+                                and_(
+                                    Subscription.status.in_(("ACTIVE", "SCHEDULED")),
+                                    Subscription.expires_at <= now,
+                                ),
+                            )
+                        )
+                        .order_by(Subscription.expires_at.desc())
+                        .limit(1)
+                    )
+                ).first()
+                if current_membership is None:
+                    return None
+                subscription, plan_name = current_membership
+                status = "EXPIRED"
+
+        return {
+            "plan_name": plan_name,
+            "status": status,
+            "starts_at": subscription.starts_at,
+            "expires_at": subscription.expires_at,
+            "has_premium_access": status == "ACTIVE",
+        }
+
     @staticmethod
-    def _serialize_profile(user: User, profile: UserProfile | None) -> dict:
+    def _serialize_profile(
+        user: User,
+        profile: UserProfile | None,
+        membership: dict | None,
+    ) -> dict:
         return {
             "full_name": " ".join(
                 part
@@ -194,6 +269,7 @@ class UserController:
             "country": profile.country if profile else None,
             "latitude": profile.latitude if profile else None,
             "longitude": profile.longitude if profile else None,
+            "membership": membership,
         }
 
     @staticmethod

@@ -37,6 +37,11 @@ class DashboardController:
                 Subscription.expires_at > now,
             )
         )
+        expired_subscriptions = await self.db.scalar(
+            select(func.count(Subscription.id)).where(
+                Subscription.status == "EXPIRED"
+            )
+        )
 
         plans_result = await self.db.scalars(
             select(Plan).order_by(Plan.price_minor.asc(), Plan.id.asc())
@@ -79,6 +84,19 @@ class DashboardController:
                 .limit(12)
             )
         ).all()
+        recent_expiration_rows = (
+            await self.db.execute(
+                select(Subscription, User.email, Plan.name)
+                .join(User, User.id == Subscription.user_id)
+                .join(Plan, Plan.id == Subscription.plan_id)
+                .where(
+                    User.is_deleted.is_(False),
+                    Subscription.status == "EXPIRED",
+                )
+                .order_by(Subscription.expires_at.desc())
+                .limit(12)
+            )
+        ).all()
 
         return {
             "message": "Dashboard data retrieved successfully",
@@ -86,6 +104,7 @@ class DashboardController:
                 "summary": {
                     "total_plans": int(total_plans or 0),
                     "active_subscriptions": int(active_subscriptions or 0),
+                    "expired_subscriptions": int(expired_subscriptions or 0),
                     "total_users": int(total_users or 0),
                 },
                 "plans": [
@@ -124,6 +143,15 @@ class DashboardController:
                         "expires_at": subscription.expires_at,
                     }
                     for subscription, email, plan_name in expiration_rows
+                ],
+                "recent_expirations": [
+                    {
+                        "id": subscription.id,
+                        "user_email": email,
+                        "plan_name": plan_name,
+                        "expires_at": subscription.expires_at,
+                    }
+                    for subscription, email, plan_name in recent_expiration_rows
                 ],
             },
         }

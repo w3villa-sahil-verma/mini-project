@@ -60,6 +60,7 @@ type DashboardData = {
   summary: {
     total_plans: number;
     active_subscriptions: number;
+    expired_subscriptions: number;
     total_users: number;
   };
   plans: DashboardPlan[];
@@ -67,6 +68,12 @@ type DashboardData = {
   user_registrations: MonthlyCount[];
   subscriptions_by_month: MonthlyCount[];
   upcoming_expirations: UpcomingExpiration[];
+  recent_expirations: {
+    id: number;
+    user_email: string;
+    plan_name: string;
+    expires_at: string | null;
+  }[];
 };
 
 function formatDate(value: string | null) {
@@ -220,7 +227,7 @@ export function Dashboard() {
 
       <section
         aria-label="Dashboard summary"
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
         <MetricCard
           label="Plans"
@@ -238,6 +245,12 @@ export function Dashboard() {
           label="Users"
           value={summary?.total_users}
           description="Registered, non-deleted members"
+          loading={loading}
+        />
+        <MetricCard
+          label="Expired subscriptions"
+          value={summary?.expired_subscriptions}
+          description="Memberships whose duration has ended"
           loading={loading}
         />
       </section>
@@ -389,6 +402,47 @@ export function Dashboard() {
                         className="h-20 text-center text-muted-foreground"
                       >
                         No upcoming subscription expirations.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recently expired subscriptions</CardTitle>
+              <CardDescription>
+                Memberships whose access period has ended.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Expired</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dashboard.recent_expirations.map((subscription) => (
+                    <TableRow key={subscription.id}>
+                      <TableCell className="font-medium">
+                        {subscription.user_email}
+                      </TableCell>
+                      <TableCell>{subscription.plan_name}</TableCell>
+                      <TableCell>{formatDate(subscription.expires_at)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {dashboard.recent_expirations.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={3}
+                        className="h-20 text-center text-muted-foreground"
+                      >
+                        No expired subscriptions found.
                       </TableCell>
                     </TableRow>
                   )}

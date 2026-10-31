@@ -1,9 +1,11 @@
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter
 
 from src.database.Database import db;
 from src.utils.colored_console import console;
 from src.apis.v1.Routes import router;
+from src.cron.SubscriptionExpirationJob import run_subscription_expiration_job
 from src.core.exceptions.exceptions import AppException
 from src.core.exceptions.handlers import (
     app_exception_handler,
@@ -32,11 +34,21 @@ class Application:
 
         await db.initialize_database()
 
-        yield
+        expiration_job = asyncio.create_task(
+            run_subscription_expiration_job(),
+            name="subscription-expiration-job",
+        )
+        try:
+            yield
+        finally:
+            expiration_job.cancel()
+            try:
+                await expiration_job
+            except asyncio.CancelledError:
+                pass
 
-        console.print("🛑 Application shutting down...", style="bold red")
-
-        await db.close()
+            console.print("🛑 Application shutting down...", style="bold red")
+            await db.close()
 
     def registerRouter(self, router:APIRouter ):
         self.app.include_router(router)
