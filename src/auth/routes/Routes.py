@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from src.auth.controller.Controller import AuthController
 from src.auth.services.OAuthService import OAuthService
 from src.middlewares.authorization import require_access_token
+from src.user.controller.Controller import UserController
 
 
 class RequestBody(BaseModel):
@@ -91,7 +92,9 @@ def getRouter()->APIRouter:
     @router.get("/me")
     async def me(
         me: Annotated[dict, Depends(require_access_token)],
+        user_controller: Annotated[UserController, Depends(UserController)],
     ):
+        identity = await user_controller.get_auth_identity(int(me["user_id"]))
         exp = me.get("exp")
 
         if exp is not None:
@@ -105,7 +108,7 @@ def getRouter()->APIRouter:
 
         return {
             "message" : message,
-            "data": me
+            "data": {**me, **identity}
         }
                 
     return router;

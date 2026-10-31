@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends
-from typing import Annotated
+from typing import Annotated, Literal
+
+from fastapi import APIRouter, Depends, Query
 
 from src.middlewares.authorization import require_access_token
 from src.user.controller.Controller import ProfileUpdate, UserController
@@ -14,16 +15,30 @@ def getRouter()->APIRouter:
 
     @router.get("")
     async def getAll(
-        controller: Annotated[UserController, Depends(UserController)]
+        controller: Annotated[UserController, Depends(UserController)],
+        page: Annotated[int, Query(ge=1)] = 1,
+        page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+        search: Annotated[str | None, Query(max_length=100)] = None,
+        role: Annotated[Literal["ADMIN", "USER"] | None, Query()] = None,
+        status_filter: Annotated[
+            Literal["all", "active", "deleted"],
+            Query(alias="status"),
+        ] = "all",
     ):
-        return await controller.get_all()
+        return await controller.get_all(
+            page=page,
+            page_size=page_size,
+            search=search,
+            role=role,
+            status_filter=status_filter,
+        )
 
-    @router.delete("/{plan_id}")
+    @router.delete("/{user_id}")
     async def delete(
-        plan_id: int,
+        user_id: int,
         controller: Annotated[UserController, Depends(UserController)],
     ):
-        return await controller.soft_delete(plan_id)
+        return await controller.soft_delete(user_id)
         
     return router;
 

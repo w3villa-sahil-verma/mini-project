@@ -46,6 +46,13 @@ totals, active subscriptions, monthly user-registration and subscription
 counts for the last 12 months, recent users, plan details, and upcoming
 subscription expirations.
 
+The admin user list at `/admin/users` uses
+`GET /api/v1/admin/users?page=1&page_size=20&search=...&role=USER&status=active`.
+Search matches a user's name, email, phone, or ID. Role and account status can
+be filtered independently, and responses include total counts and pagination
+metadata. User names come from the optional user profile; accounts without a
+profile name are shown as not provided.
+
 The application checks subscription expirations once per minute and marks
 subscriptions with an elapsed `expires_at` as `EXPIRED`. Plans remain available
 in the shared plan catalog; expiration applies to the individual user's

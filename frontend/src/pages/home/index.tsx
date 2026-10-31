@@ -359,7 +359,7 @@ function SignActions({ role }: { role?: USER_ROLE }) {
       )}
       {role && (
         <Link
-          to={`${role.toLowerCase()}/dashboard`}
+          to={`${role.toLowerCase()}`}
           className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap"
         >
           <Button

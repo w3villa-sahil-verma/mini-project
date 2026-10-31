@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from pydantic import BaseModel, Field, field_validator, model_validator
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, cast, func, or_, select, String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -57,16 +57,85 @@ class UserController:
         self.db = db
         self.storage = storage
 
-    async def get_all(self):
-        result = await self.db.scalars(
-            select(User).order_by(User.id.desc())
+    async def get_all(
+        self,
+        *,
+        page: int = 1,
+        page_size: int = 20,
+        search: str | None = None,
+        role: str | None = None,
+        status_filter: str = "all",
+    ):
+        query = select(User, UserProfile).outerjoin(
+            UserProfile,
+            UserProfile.user_id == User.id,
         )
+        filters = []
 
+        if search:
+            search_term = search.strip()
+            if search_term:
+                pattern = f"%{search_term}%"
+                filters.append(
+                    or_(
+                        User.email.ilike(pattern),
+                        UserProfile.first_name.ilike(pattern),
+                        UserProfile.last_name.ilike(pattern),
+                        (UserProfile.first_name + " " + UserProfile.last_name).ilike(
+                            pattern
+                        ),
+                        UserProfile.phone.ilike(pattern),
+                        cast(User.id, String).ilike(pattern),
+                    )
+                )
+
+        if role:
+            filters.append(User.role == role)
+        if status_filter == "active":
+            filters.append(User.is_deleted.is_(False))
+        elif status_filter == "deleted":
+            filters.append(User.is_deleted.is_(True))
+
+        if filters:
+            query = query.where(*filters)
+
+        total = await self.db.scalar(
+            select(func.count(User.id))
+            .select_from(User)
+            .outerjoin(UserProfile, UserProfile.user_id == User.id)
+            .where(*filters)
+        )
+        result = await self.db.execute(
+            query
+            .order_by(User.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
         users = result.all()
+        total_count = int(total or 0)
 
         return {
             "message": "Users retrieved successfully",
-            "data": [self._serialize(user) for user in users],
+            "data": {
+                "items": [
+                    {
+                        **self._serialize(user),
+                        "full_name": " ".join(
+                            part
+                            for part in (
+                                profile.first_name if profile else "",
+                                profile.last_name if profile else "",
+                            )
+                            if part
+                        ),
+                    }
+                    for user, profile in users
+                ],
+                "total": total_count,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total_count + page_size - 1) // page_size,
+            },
         }
 
     async def get(self, plan_id: int):
@@ -81,6 +150,14 @@ class UserController:
         return {
             "message": "User retrieved successfully",
             "data": self._serialize(user),
+        }
+
+    async def get_auth_identity(self, user_id: int) -> dict:
+        user = await self._get_active_user(user_id)
+        return {
+            "user_id": user.id,
+            "email": user.email,
+            "role": user.role.value,
         }
 
     async def soft_delete(self, plan_id: int):

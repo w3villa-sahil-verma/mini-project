@@ -80,8 +80,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const data = {
     user: {
-      name: "shadcn",
-      email: user?.user_id || "m@example.com",
+      name: user?.email || "Account",
+      email: user?.role || "",
       avatar: "/avatars/shadcn.jpg",
     },
     navMain: NAV[role],
