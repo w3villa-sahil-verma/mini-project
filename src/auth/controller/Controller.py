@@ -4,6 +4,7 @@ from fastapi import Depends, Request, Response;
 from src.auth.services.RegistrationService import RegistrationService
 from src.auth.services.AuthenticationService import AuthenticationService;
 from src.common.decorators.SetAuthCookie import set_auth_cookie
+from src.core.settings import settings
 
 
 class AuthController:
@@ -53,8 +54,8 @@ class AuthController:
         response.delete_cookie(
             key="access_token",
             httponly=True,
-            secure=True,
-            samesite="lax",
+            secure=settings.OAUTH_COOKIE_SECURE,
+            samesite=settings.AUTH_COOKIE_SAMESITE,
             path="/",
         )
 

@@ -13,6 +13,20 @@ For Render, use the repository root as the service root directory,
 `uvicorn src.Application:app --host 0.0.0.0 --port $PORT` as the start command.
 Configure production secrets and service URLs as Render environment variables.
 
+For the deployed Vercel frontend and Render API, configure:
+
+- **Vercel environment variable:** `VITE_BACKEND_BASE_URL=https://mini-project-5goq.onrender.com`
+- **Render environment variables:** `CORS_ALLOWED_ORIGINS=https://mini-project-gules-sigma.vercel.app`, `FRONTEND_BASE_URL=https://mini-project-gules-sigma.vercel.app`, `OAUTH_COOKIE_SECURE=true`, and `AUTH_COOKIE_SAMESITE=none`
+- **Google and Facebook OAuth redirect URIs:** `https://mini-project-5goq.onrender.com/api/v1/auth/oauth/google/callback` and `https://mini-project-5goq.onrender.com/api/v1/auth/oauth/facebook/callback`
+
+The frontend API client sends credentials, so CORS must use the exact Vercel
+origin rather than `*`. `SameSite=None; Secure` is required for the browser to
+send the HTTP-only login cookie from the Vercel site to the Render API. Redeploy
+the frontend after changing its Vercel environment variable and restart the
+Render service after changing its environment. If the Vercel project has
+additional preview domains that need access, add each exact origin as a
+comma-separated entry in `CORS_ALLOWED_ORIGINS`.
+
 ## Razorpay payments
 
 Set the backend `ROZAR_PAY_API_KEY` and `ROZAR_PAY_SECRET` in the root `.env`

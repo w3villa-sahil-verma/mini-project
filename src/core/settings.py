@@ -1,12 +1,19 @@
 from pathlib import Path
 
-from pydantic import field_validator
+from typing import Literal
+
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    CORS_ALLOWED_ORIGINS: str = (
+        "http://localhost:5173,http://127.0.0.1:5173"
+    )
+    AUTH_COOKIE_SAMESITE: Literal["lax", "strict", "none"] = "lax"
+
     MAIL_USERNAME: str = ""
     MAIL_PASSWORD: str = ""
     MAIL_FROM: str = ""
@@ -87,11 +94,27 @@ class Settings(BaseSettings):
     def default_empty_database_port(cls, value: object) -> object:
         return 3306 if value == "" else value
 
+    @model_validator(mode="after")
+    def validate_auth_cookie_settings(self) -> "Settings":
+        if self.AUTH_COOKIE_SAMESITE == "none" and not self.OAUTH_COOKIE_SECURE:
+            raise ValueError(
+                "OAUTH_COOKIE_SECURE must be true when AUTH_COOKIE_SAMESITE is none."
+            )
+        return self
+
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_ignore_empty=True,
         extra="ignore",
     )
+
+    @property
+    def cors_allowed_origins(self) -> list[str]:
+        return [
+            origin.strip().rstrip("/")
+            for origin in self.CORS_ALLOWED_ORIGINS.split(",")
+            if origin.strip()
+        ]
 
 
 settings = Settings()

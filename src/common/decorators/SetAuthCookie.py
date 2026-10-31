@@ -2,6 +2,8 @@
 from functools import wraps
 from fastapi import Response
 
+from src.core.settings import settings
+
 
 def set_auth_cookie(func):
     @wraps(func)
@@ -17,8 +19,8 @@ def set_auth_cookie(func):
                 key="access_token",
                 value=access_token,
                 httponly=True,
-                secure=True,
-                samesite="lax",
+                secure=settings.OAUTH_COOKIE_SECURE,
+                samesite=settings.AUTH_COOKIE_SAMESITE,
                 max_age=24 * 60 * 60,
                 path="/",
             )

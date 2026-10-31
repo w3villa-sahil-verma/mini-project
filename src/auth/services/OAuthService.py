@@ -132,7 +132,7 @@ class OAuthService:
             value=access_token,
             httponly=True,
             secure=self.settings.OAUTH_COOKIE_SECURE,
-            samesite="lax",
+            samesite=self.settings.AUTH_COOKIE_SAMESITE,
             max_age=int(ACCESS_TOKEN_LIFETIME.total_seconds()),
             path="/",
         )
