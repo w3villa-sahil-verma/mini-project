@@ -8,5 +8,6 @@ pwdlib[argon2]
 pydantic-settings
 python-dotenv
 rich
-SQLAlchemy
+SQLAlchemy[asyncio]
+greenlet
 uvicorn[standard]
