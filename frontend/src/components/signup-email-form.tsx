@@ -11,7 +11,6 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { IconLayoutRows } from "@tabler/icons-react";
 import { handleFetch } from "@/hooks/useFetch";
 import { RegistrationLinkSentDialog } from "./dialogs/registration-link-send-dialog";
 import { useState } from "react";
@@ -19,6 +18,7 @@ import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 import type { CommonResponse } from "@/types/common/request";
 import { OAuthButtons } from "@/components/oauth-buttons";
+import { ImageGalleryLogo } from "@/components/image-gallery-logo";
 
 export function SignupEmailForm({
   className,
@@ -60,12 +60,12 @@ export function SignupEmailForm({
                 href="#"
                 className="flex flex-col items-center gap-2 font-medium"
               >
-                <div className="flex size-8 items-center justify-center rounded-md">
-                  <IconLayoutRows className="size-6" />
+                <div className="flex size-8 items-center justify-center rounded-md text-[#20221e]">
+                  <ImageGalleryLogo className="size-6" />
                 </div>
-                <span className="sr-only">Acme Inc.</span>
+                <span className="sr-only">Image Gallery.</span>
               </a>
-              <h1 className="text-xl font-bold">Welcome to Acme Inc.</h1>
+              <h1 className="text-xl font-bold">Welcome to Image Gallery.</h1>
               <FieldDescription>
                 Already have an account? <a href="#">Sign in</a>
               </FieldDescription>

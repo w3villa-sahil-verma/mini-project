@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   ArrowDownRight,
   ArrowRight,
-  Images,
   LockKeyhole,
   Menu,
   Sparkles,
@@ -10,6 +9,7 @@ import {
 } from "lucide-react";
 import { Link, useRouteLoaderData } from "react-router";
 
+import { ImageGalleryLogo } from "@/components/image-gallery-logo";
 import type { User } from "@/types/common/user";
 
 const previewImages = [
@@ -79,7 +79,7 @@ export function Home() {
           aria-label="Image Gallery home"
         >
           <span className="flex size-10 items-center justify-center rounded-full bg-[#20221e] text-[#f7f5ef]">
-            <Images className="size-5" aria-hidden="true" />
+            <ImageGalleryLogo className="size-5" />
           </span>
           <span className="font-heading text-base font-bold tracking-tight">
             Image Gallery
@@ -303,7 +303,7 @@ export function Home() {
       <footer className="bg-[#20221e] px-5 py-7 text-sm text-[#d7d5cc] sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <Link to="/" className="flex items-center gap-2.5 font-semibold text-white">
-            <Images className="size-4" aria-hidden="true" />
+            <ImageGalleryLogo className="size-4" />
             Image Gallery
           </Link>
           <p>Find a moment. Keep the feeling.</p>

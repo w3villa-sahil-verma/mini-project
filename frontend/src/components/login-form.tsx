@@ -24,6 +24,7 @@ import { useRevalidator } from "react-router";
 import type { CommonResponse } from "@/types/common/request";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { useSearchParams } from "react-router";
+import { ImageGalleryLogo } from "@/components/image-gallery-logo";
 
 type RequestPayload = {
   email: string;
@@ -81,6 +82,9 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
+          <div className="flex size-10 items-center justify-center rounded-full bg-[#20221e] text-[#f7f5ef]">
+            <ImageGalleryLogo className="size-5" />
+          </div>
           <CardTitle>Login to your account</CardTitle>
           <CardDescription>
             Enter your email below to login to your account

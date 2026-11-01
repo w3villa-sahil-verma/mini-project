@@ -1,11 +1,16 @@
 import { API_CONFIG } from "@/config/api.config";
 import { Button } from "@/components/ui/button";
+import { IconBrandFacebook, IconBrandGoogle } from "./oauth-provider-icons";
 
 type OAuthProvider = "google" | "facebook";
 
-const providers: { id: OAuthProvider; label: string }[] = [
-  { id: "google", label: "Google" },
-  { id: "facebook", label: "Facebook" },
+const providers: {
+  id: OAuthProvider;
+  label: string;
+  Icon: typeof IconBrandGoogle;
+}[] = [
+  { id: "google", label: "Google", Icon: IconBrandGoogle },
+  { id: "facebook", label: "Facebook", Icon: IconBrandFacebook },
 ];
 
 export function OAuthButtons() {
@@ -17,14 +22,15 @@ export function OAuthButtons() {
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {providers.map((provider) => (
+      {providers.map(({ id, label, Icon }) => (
         <Button
-          key={provider.id}
+          key={id}
           type="button"
           variant="outline"
-          onClick={() => startSignIn(provider.id)}
+          onClick={() => startSignIn(id)}
         >
-          Continue with {provider.label}
+          <Icon className="size-4" aria-hidden="true" />
+          Continue with {label}
         </Button>
       ))}
     </div>
