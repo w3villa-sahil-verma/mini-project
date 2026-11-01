@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio.engine import AsyncEngine
 
 from src.database.Base import Base
 from src.core.settings import settings
+import src.models.AuthToken
 
 
 class Database:

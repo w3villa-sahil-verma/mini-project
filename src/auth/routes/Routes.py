@@ -1,13 +1,14 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from typing import Annotated
 from typing import Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.auth.controller.Controller import AuthController
 from src.auth.services.OAuthService import OAuthService
+from src.core.settings import settings
 from src.middlewares.authorization import require_access_token
 from src.user.controller.Controller import UserController
 
@@ -20,6 +21,13 @@ class RequestBody(BaseModel):
 class StandardLoginRequestBody(BaseModel):
     email: str
     password: str
+
+class PasswordResetRequestBody(BaseModel):
+    email: str
+
+class PasswordResetBody(BaseModel):
+    token: str
+    password: str = Field(min_length=8)
 
 def getRouter()->APIRouter:
 
@@ -52,6 +60,39 @@ def getRouter()->APIRouter:
     ):
         return await authController.login(email=body.email, password=body.password, response=response);
 
+    @router.post("/refresh")
+    async def refresh(
+        request: Request,
+        response: Response,
+        auth_controller: Annotated[AuthController, Depends(AuthController)],
+    ):
+        verify_cookie_request_origin(request)
+        return await auth_controller.refresh(
+            refresh_token=request.cookies.get("refresh_token"),
+            response=response,
+        )
+
+    @router.post("/password-reset/request")
+    async def requestPasswordReset(
+        body: PasswordResetRequestBody,
+        auth_controller: Annotated[AuthController, Depends(AuthController)],
+    ):
+        return await auth_controller.requestPasswordReset(body.email)
+
+    @router.get("/password-reset/validate")
+    async def validatePasswordReset(
+        token: str,
+        auth_controller: Annotated[AuthController, Depends(AuthController)],
+    ):
+        return await auth_controller.validatePasswordReset(token)
+
+    @router.post("/password-reset/confirm")
+    async def resetPassword(
+        body: PasswordResetBody,
+        auth_controller: Annotated[AuthController, Depends(AuthController)],
+    ):
+        return await auth_controller.resetPassword(body.token, body.password)
+
     @router.get("/oauth/meta")
     async def oauthMeta(
         oauth_service: Annotated[OAuthService, Depends(OAuthService)],
@@ -82,12 +123,17 @@ def getRouter()->APIRouter:
             provider_error=error,
         )
 
-    @router.get("/logout")
+    @router.post("/logout")
     async def logout(
+        request: Request,
         response: Response,
         authController: Annotated[AuthController, Depends(AuthController)],
     ):
-        return await authController.logout(response=response);
+        verify_cookie_request_origin(request)
+        return await authController.logout(
+            response=response,
+            refresh_token=request.cookies.get("refresh_token"),
+        );
 
     @router.get("/me")
     async def me(
@@ -112,3 +158,12 @@ def getRouter()->APIRouter:
         }
                 
     return router;
+
+
+def verify_cookie_request_origin(request: Request) -> None:
+    origin = request.headers.get("origin")
+    if origin is None or origin.rstrip("/") not in settings.cors_allowed_origins:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Request origin is not allowed.",
+        )

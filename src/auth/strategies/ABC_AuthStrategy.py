@@ -1,8 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TypedDict
-
-class LoginResponse(TypedDict):
-    access_token: str
+from src.common.token.types import AuthTokens
 
 class AuthStrategy(ABC):
     """Interface for auth strategies."""
@@ -10,7 +7,7 @@ class AuthStrategy(ABC):
     #TODO : Registration Link merge here
 
     @abstractmethod
-    async def authenticate(self, email: str, password: str) -> str:
+    async def authenticate(self, email: str, password: str) -> AuthTokens:
         """Accept Provider's AccessToken and authenticate user"""
         raise NotImplementedError
 

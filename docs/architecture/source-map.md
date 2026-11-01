@@ -109,8 +109,19 @@ which redirects to Google or Facebook with a random state value stored in an
 HTTP-only cookie. On callback, the service validates state, exchanges the
 authorization code server-side, fetches provider identity/email, creates or
 finds a normal `User`, persists provider identifiers in `OAuthIdentity`, and
-sets the same HTTP-only access-token cookie used by password login. Provider
-client secrets remain backend-only.
+issues HTTP-only access and refresh cookies. Password login and registration
+use `AuthTokenService` to issue the same token pair. Refresh tokens are
+single-use JWTs backed by `AuthToken` records; the refresh endpoint rotates
+them, and logout or a password change invalidates outstanding refresh records.
+The frontend retries an unauthorized API request once after refreshing the
+session.
+
+The forgot-password page submits an email to `PasswordResetService`. For a
+registered, active account, it creates a short-lived, single-use signed token
+and sends a reset link through `NotificationService`. The reset page validates
+the token before showing the password form. On confirmation, the service
+updates the credential, consumes the reset token, and invalidates refresh
+tokens. Provider client secrets remain backend-only.
 
 ---
 

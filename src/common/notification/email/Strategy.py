@@ -37,7 +37,7 @@ class EmailNotificationStrategy(NotificationStrategy):
         message = MessageSchema(
             subject=notification.subject,
             recipients=[NameEmail(name="", email=notification.recipient)],
-            body=notification.body,
+            body=notification.html_body or notification.body,
             subtype=MessageType.html,
         )
 

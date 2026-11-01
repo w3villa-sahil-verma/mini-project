@@ -2,7 +2,6 @@ import hmac
 import logging
 import secrets
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
 from typing import Annotated, Literal
 from urllib.parse import urlencode
 
@@ -13,16 +12,16 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.common.token.JwtService import JwtTokenService
+from src.auth.services.AuthTokenService import AuthTokenService
+from src.common.decorators.SetAuthCookie import set_auth_cookies
+from src.common.token.types import AuthTokens
 from src.core.settings import settings
-from src.common.token.constants import TOKEN_TYPES
 from src.database.Database import getAsyncDbSession
 from src.models.OAuthIdentity import OAuthIdentity
 from src.models.User import User
 
 OAuthProvider = Literal["google", "facebook"]
 OAUTH_STATE_MAX_AGE_SECONDS = 600
-ACCESS_TOKEN_LIFETIME = timedelta(days=1)
 logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
@@ -40,10 +39,13 @@ class OAuthService:
     def __init__(
         self,
         db: Annotated[AsyncSession, Depends(getAsyncDbSession)],
-        token_service: Annotated[JwtTokenService, Depends(JwtTokenService)],
+        auth_token_service: Annotated[
+            AuthTokenService,
+            Depends(AuthTokenService),
+        ],
     ) -> None:
         self.db = db
-        self.token_service = token_service
+        self.auth_token_service = auth_token_service
         self.settings = settings
 
     def get_meta(self) -> dict:
@@ -107,7 +109,7 @@ class OAuthService:
         config = self._provider_config(provider)
         try:
             profile = await self._fetch_profile(provider, config, code)
-            access_token = await self._authenticate_profile(provider, profile)
+            tokens = await self._authenticate_profile(provider, profile)
         except HTTPException as error:
             logger.warning(
                 "%s OAuth callback failed: %s",
@@ -127,15 +129,7 @@ class OAuthService:
             samesite="lax",
             path="/",
         )
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            secure=self.settings.OAUTH_COOKIE_SECURE,
-            samesite=self.settings.AUTH_COOKIE_SAMESITE,
-            max_age=int(ACCESS_TOKEN_LIFETIME.total_seconds()),
-            path="/",
-        )
+        set_auth_cookies(response, tokens)
         return response
 
     async def _fetch_profile(
@@ -225,7 +219,7 @@ class OAuthService:
         self,
         provider: OAuthProvider,
         profile: dict,
-    ) -> str:
+    ) -> AuthTokens:
         provider_user_id = profile["provider_user_id"]
         email = profile["email"].strip().lower()
         if len(email) > 30:
@@ -295,15 +289,9 @@ class OAuthService:
                         detail="This user account is not available.",
                     )
 
-        now = datetime.now(timezone.utc)
-        return self.token_service.sign(
-            {
-                "user_id": user.id,
-                "role": user.role.value,
-                "type": TOKEN_TYPES.ACCESS,
-                "exp": now + ACCESS_TOKEN_LIFETIME,
-                "iat": now,
-            }
+        return await self.auth_token_service.issue_auth_tokens(
+            user.id,
+            user.role.value,
         )
 
     def _provider_config(self, provider: OAuthProvider) -> ProviderConfig:

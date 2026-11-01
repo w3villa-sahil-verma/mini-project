@@ -7,3 +7,4 @@ class Notification:
     subject: str
     body: str
     metadata: dict[str, Any] | None = None
+    html_body: str | None = None

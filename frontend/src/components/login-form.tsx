@@ -15,7 +15,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
@@ -58,7 +58,7 @@ export function LoginForm({
     e.preventDefault();
 
     setLoading(true);
-    await handleFetch<CommonResponse<any>>(
+    await handleFetch<CommonResponse<unknown>>(
       `/api/v1/auth/standard/login`,
       (resp) => {
         logger.debug("Data received:", resp);
@@ -111,12 +111,12 @@ export function LoginForm({
               <Field>
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <a
-                    href="#"
+                  <Link
+                    to="/forgot-password"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
                     Forgot your password?
-                  </a>
+                  </Link>
                 </div>
                 <Input
                   id="password"
@@ -137,7 +137,7 @@ export function LoginForm({
                 <FieldDescription className="text-center">Or continue with</FieldDescription>
                 <OAuthButtons />
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <a href="#">Sign up</a>
+                  Don&apos;t have an account? <Link to="/register">Sign up</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

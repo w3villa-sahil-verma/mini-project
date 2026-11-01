@@ -26,7 +26,7 @@ class GoogleAppsScriptEmailStrategy(NotificationStrategy):
             "to": notification.recipient,
             "subject": notification.subject,
             "text": notification.body,
-            "html": "",
+            "html": notification.html_body or "",
         }
 
         async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:

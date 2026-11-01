@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 
 from src.common.token.JwtService import JwtTokenService
+from src.common.token.constants import TOKEN_TYPES
 
 def require_access_token(
         request: Request,
@@ -18,6 +19,11 @@ def require_access_token(
         )
 
     payload = tokenService.verify(token=token)
+    if payload.get("type") != TOKEN_TYPES.ACCESS.value:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid access token",
+        )
 
     return payload
 

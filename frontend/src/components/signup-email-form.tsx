@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import type { CommonResponse } from "@/types/common/request";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { ImageGalleryLogo } from "@/components/image-gallery-logo";
+import { Link } from "react-router";
 
 export function SignupEmailForm({
   className,
@@ -34,7 +35,7 @@ export function SignupEmailForm({
 
     if (email) {
       setLoading(true)
-      await handleFetch<CommonResponse<any>>(
+      await handleFetch<CommonResponse<unknown>>(
         `/api/v1/auth/registeration-mail?email=${encodeURIComponent(email)}`,
         (resp) => {
           logger.debug("Data received:", resp)
@@ -67,7 +68,7 @@ export function SignupEmailForm({
               </a>
               <h1 className="text-xl font-bold">Welcome to Image Gallery.</h1>
               <FieldDescription>
-                Already have an account? <a href="#">Sign in</a>
+                Already have an account? <Link to="/login">Sign in</Link>
               </FieldDescription>
             </div>
             <Field>

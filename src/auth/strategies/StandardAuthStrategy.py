@@ -1,28 +1,30 @@
 from typing import Annotated
-from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.services.AuthTokenService import AuthTokenService
 from src.common.security.HashingService import HashingService
-from src.common.token.JwtService import JwtTokenService
-from src.common.token.constants import TOKEN_TYPES
+from src.common.token.types import AuthTokens
 from src.models.User import User
 from src.models.Credential import Credential
-from src.auth.strategies.ABC_AuthStrategy import AuthStrategy, LoginResponse;
+from src.auth.strategies.ABC_AuthStrategy import AuthStrategy;
 from src.database.Database import getAsyncDbSession
 
 class StandardAuthStrategy(AuthStrategy):
     def __init__(
         self,
         db: Annotated[AsyncSession, Depends(getAsyncDbSession)],
-        tokenService: Annotated[JwtTokenService, Depends(JwtTokenService)],
+        auth_token_service: Annotated[
+            AuthTokenService,
+            Depends(AuthTokenService),
+        ],
     ):
         self.db = db
-        self.tokenService = tokenService
+        self.auth_token_service = auth_token_service
 
-    async def authenticate(self, email: str, password: str)->str:
+    async def authenticate(self, email: str, password: str) -> AuthTokens:
 
         # 1. Get user by email
         result = await self.db.execute(
@@ -62,25 +64,10 @@ class StandardAuthStrategy(AuthStrategy):
                 detail="Invalid email or password",
             )
 
-        # 4. Create access token
-        now = datetime.now(timezone.utc)
-
-        EXP_IN_MIN = 24 * 60  # 1 day
-
-        accessTokenPayload = {
-            "user_id": user.id,
-            "role":user.role,
-            "type": TOKEN_TYPES.ACCESS,
-            "exp": now + timedelta(minutes=EXP_IN_MIN),
-            "iat": now,
-        }
-
-        access_token = self.tokenService.sign(
-            payload=accessTokenPayload
+        return await self.auth_token_service.issue_auth_tokens(
+            user.id,
+            user.role.value,
         )
-
-        # 5. Send access token
-        return access_token
 
     async def logout(self):
         # TODO

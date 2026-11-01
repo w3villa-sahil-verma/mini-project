@@ -56,7 +56,9 @@ Copy the root `.env.example` to `<project-root>/.env`. Backend configuration
 is loaded through `src/core/settings.py`; process environment variables override
 values from that file. Blank optional SMTP values stay unset, and blank
 numeric/boolean mail settings use their defaults. Keep secrets in the ignored
-root `.env` file and never commit it.
+root `.env` file and never commit it. Set `JWT_SECRET_KEY` to a long,
+cryptographically random value in every environment; changing it invalidates
+all previously issued tokens.
 
 For Render, use the repository root as the service root directory,
 `pip install -r requirements.txt` as the build command, and
@@ -132,11 +134,25 @@ provider-specific `GOOGLE_REDIRECT_URI` or `FACEBOOK_REDIRECT_URI` is explicitly
 set. Do not leave either override set to localhost in Render. For local
 development, the default backend URL is `http://localhost:8000`.
 
+### Password reset and session refresh
+
+The login page links to a password reset form. A registered email receives a
+single-use reset link that expires after 30 minutes; an unknown email returns
+`404`. Reset tokens are validated before the new-password form is shown, and
+password changes invalidate existing refresh tokens. Passwords must contain
+at least eight characters.
+
+Successful password, registration, and OAuth sign-ins issue an access token
+and a 30-day, single-use refresh token in HTTP-only cookies. The frontend
+automatically calls `POST /api/v1/auth/refresh` and retries an unauthorized API
+request once. Refresh tokens are rotated and stored server-side so they can be
+revoked during logout or password reset.
+
 The login and registration pages send users to
 `GET /api/v1/auth/oauth/{google|facebook}`. The backend stores a short-lived,
 HTTP-only OAuth state cookie, exchanges the authorization code server-side,
-and creates or finds a user before setting the normal HTTP-only
-`access_token` cookie. New provider emails create a regular user account.
+and creates or finds a user before setting HTTP-only `access_token` and
+`refresh_token` cookies. New provider emails create a regular user account.
 Google email must be provider-verified. When a provider reports the same email
 as an existing account, its provider identity is linked to that account;
 Facebook sign-in requires the provider to return an email. The callback

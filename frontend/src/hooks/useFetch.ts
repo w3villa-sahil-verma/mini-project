@@ -24,6 +24,8 @@ const defaultConfig: FetchConfig = {
   baseUrl: "",
 };
 
+let refreshInFlight: Promise<boolean> | null = null;
+
 function buildUrl(input: RequestInfo, baseUrl?: string): RequestInfo {
   if (!baseUrl || typeof input !== "string") {
     return input;
@@ -54,7 +56,16 @@ export async function handleFetch<T>(
     const url = buildUrl(input, config.baseUrl);
     const requestInit = buildInit(init, config);
 
-    const res = await fetch(url, requestInit);
+    let res = await fetch(url, requestInit);
+    if (
+      res.status === 401 &&
+      typeof input === "string" &&
+      canRefreshSession(input)
+    ) {
+      if (await refreshSession(config)) {
+        res = await fetch(url, requestInit);
+      }
+    }
 
     if (!res.ok) {
       throw new HttpError(res.status);
@@ -70,6 +81,30 @@ export async function handleFetch<T>(
       onError?.(error);
     }
   }
+}
+
+function canRefreshSession(input: string): boolean {
+  const path = new URL(input, window.location.origin).pathname;
+  return (
+    !path.endsWith("/api/v1/auth/refresh") &&
+    !path.includes("/api/v1/auth/standard/") &&
+    !path.endsWith("/api/v1/auth/password-reset/request") &&
+    !path.endsWith("/api/v1/auth/password-reset/confirm")
+  );
+}
+
+function refreshSession(config: FetchConfig): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(
+      buildUrl("/api/v1/auth/refresh", config.baseUrl),
+      buildInit({ method: "POST" }, config),
+    )
+      .then((response) => response.ok)
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
 }
 
 export function useFetch<T>(

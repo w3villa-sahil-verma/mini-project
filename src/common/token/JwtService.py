@@ -1,6 +1,8 @@
 import jwt
 
-SECRET_KEY = "change-this-to-a-long-random-secret"
+from src.core.settings import settings
+
+SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = "HS256"
 
 

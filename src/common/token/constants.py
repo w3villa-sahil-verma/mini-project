@@ -7,3 +7,5 @@ from pydantic import BaseModel
 class TOKEN_TYPES(str, Enum):
     REGISTRATION = "REGISTRATION"
     ACCESS = "ACCESS"
+    REFRESH = "REFRESH"
+    PASSWORD_RESET = "PASSWORD_RESET"

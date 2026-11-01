@@ -17,6 +17,8 @@ import { ProfilePage } from "./pages/profile";
 import { PricingPage } from "./pages/pricing";
 import { GalleryPage } from "./pages/gallery";
 import { AdminGalleryPage } from "./pages/admin/gallery";
+import { ForgotPasswordPage } from "./pages/forgot-password";
+import { ResetPasswordPage } from "./pages/reset-password";
 
 
 export const userContext = createContext<User | null>(null);
@@ -53,6 +55,8 @@ export const router = createBrowserRouter([
       },
       { path: "register", Component: Register },
       { path: "login", Component: Login },
+      { path: "forgot-password", Component: ForgotPasswordPage },
+      { path: "reset-password", Component: ResetPasswordPage },
       { path: "gallery", Component: GalleryPage },
       { path: "gallary", Component: GalleryPage },
       {

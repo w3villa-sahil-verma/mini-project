@@ -9,6 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    JWT_SECRET_KEY: str = "change-this-to-a-long-random-secret"
     CORS_ALLOWED_ORIGINS: str = (
         "http://localhost:5173,http://127.0.0.1:5173"
     )
@@ -61,6 +62,16 @@ class Settings(BaseSettings):
     @classmethod
     def default_empty_mail_port(cls, value: object) -> object:
         return 587 if value == "" else value
+
+    @field_validator("AUTH_COOKIE_SAMESITE", mode="before")
+    @classmethod
+    def default_empty_auth_cookie_samesite(cls, value: object) -> object:
+        return "lax" if value == "" else value
+
+    @field_validator("JWT_SECRET_KEY", mode="before")
+    @classmethod
+    def default_empty_jwt_secret_key(cls, value: object) -> object:
+        return "change-this-to-a-long-random-secret" if value == "" else value
 
     @field_validator("MAIL_STARTTLS", mode="before")
     @classmethod
