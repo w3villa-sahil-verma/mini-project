@@ -6,7 +6,7 @@ import { Dashboard } from "./pages/dashboard";
 import { PrimaryLayout } from "./layouts/primary";
 import { Plan } from "./pages/plan";
 import { Users } from "./pages/user/users.page";
-import { handleFetch } from "./hooks/useFetch";
+import { handleFetch, HttpError } from "./hooks/useFetch";
 import type { CommonResponse } from "./types/common/request";
 import { logger } from "./utils/logger";
 
@@ -34,10 +34,10 @@ export const router = createBrowserRouter([
             context.set(userContext, user);
           },
           (err) => {
+            context.set(userContext, null);
+            if (err instanceof HttpError && err.status === 401) return;
             logger.error(err.message);
             toast.error(err.message);
-            context.set(userContext, null);
-            redirect("/");
           },
         );
       },
@@ -53,6 +53,7 @@ export const router = createBrowserRouter([
       },
       { path: "register", Component: Register },
       { path: "login", Component: Login },
+      { path: "gallery", Component: GalleryPage },
       { path: "gallary", Component: GalleryPage },
       {
         path: "user",

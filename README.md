@@ -1,5 +1,55 @@
 # Image Gallery
 
+## About
+
+Image Gallery is a web application for discovering and managing photography.
+Visitors can browse free images without signing in. Premium images stay locked
+unless a user is signed in with an active subscription; the API does not return
+their image URLs to users who do not have access. Administrators can upload and
+manage the gallery, while users can choose a membership to unlock premium
+collections.
+
+The frontend is built with React, TypeScript, and Vite. The API uses FastAPI,
+SQLAlchemy, and MySQL, with Storj-compatible object storage for images.
+
+## Run locally
+
+Prerequisites: Python, Node.js with npm, and a running MySQL server.
+
+1. Configure the backend environment and install its dependencies:
+
+   ```bash
+   cp .env.example .env
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+   Update the database settings in `.env` to match your local MySQL setup. The
+   application creates its configured database and tables when it starts.
+
+2. Start the API from the repository root:
+
+   ```bash
+   uvicorn src.Application:app --reload
+   ```
+
+3. In another terminal, install and start the frontend:
+
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+   The frontend uses `http://localhost:8000` as its default API URL. Set
+   `VITE_BACKEND_BASE_URL` in the frontend environment if your API runs
+   elsewhere.
+
+4. Open the Vite URL shown in the terminal (usually `http://localhost:5173`).
+   The gallery is available at `/gallery`; administrators can manage images at
+   `/admin/gallery`.
+
 ## Backend configuration
 
 Copy the root `.env.example` to `<project-root>/.env`. Backend configuration
@@ -148,7 +198,8 @@ generates a one-hour signed GET URL when returning the profile.
 
 ## Gallery
 
-Anyone can browse `/gallary`. Free images are visible to all visitors;
+Anyone can browse `/gallery`; the legacy `/gallary` path remains available.
+Free images are visible to all visitors;
 premium images are unlocked only for a valid signed-in user with an active
 subscription and remain unlocked only through that subscription's expiry.
 Locked premium tiles use a blurred/locked placeholder without returning the

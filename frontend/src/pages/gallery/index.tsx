@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useRouteLoaderData } from "react-router";
 import { LockKeyhole, RefreshCw } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
@@ -12,6 +12,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { handleFetch } from "@/hooks/useFetch";
 import type { CommonResponse } from "@/types/common/request";
+import type { User } from "@/types/common/user";
 
 type GalleryImage = {
   id: number;
@@ -38,6 +39,7 @@ function requestPage(offset: number): Promise<CommonResponse<GalleryPageData>> {
 }
 
 export function GalleryPage() {
+  const { user } = useRouteLoaderData<{ user: User | null }>("root")!;
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -46,6 +48,11 @@ export function GalleryPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const membershipPath = !user
+    ? "/register"
+    : user.role === "ADMIN"
+      ? "/admin"
+      : "/user/pricing";
 
   const loadPage = useCallback(async (pageOffset: number) => {
     setError(null);
@@ -108,9 +115,12 @@ export function GalleryPage() {
           </p>
         </div>
         {!hasPremiumAccess && (
-          <Button render={<Link to="/user/pricing" />}>
+          <Link
+            to={membershipPath}
+            className={buttonVariants({ className: "h-9 rounded-lg px-3" })}
+          >
             View membership plans
-          </Button>
+          </Link>
         )}
       </header>
 

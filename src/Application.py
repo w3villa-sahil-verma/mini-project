@@ -14,7 +14,7 @@ from src.core.exceptions.handlers import (
 from src.core.settings import settings
 from fastapi.middleware.cors import CORSMiddleware
 
-APPLICATION_NAME = "Gym Management System"
+APPLICATION_NAME = "Image Gallery"
 
 class Application: 
     def __init__(self, name):

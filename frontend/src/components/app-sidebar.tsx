@@ -40,7 +40,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Gallery",
-      url: "/gallary",
+      url: "/gallery",
       icon: <IconPhoto />,
     },
   ];
@@ -95,7 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuButton className="data-[slot=sidebar-menu-button]:p-1.5!">
                 <IconInnerShadowTop className="size-5!" />
                 <span className="text-base font-semibold">
-                  Membership Managment
+                  Image Gallery
                 </span>
               </SidebarMenuButton>
             </SidebarMenuItem>

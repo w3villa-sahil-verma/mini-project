@@ -10,6 +10,16 @@ export type FetchConfig = {
   headers?: HeadersInit;
 } & RequestInit;
 
+export class HttpError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`Request failed with status ${status}`);
+    this.name = "HttpError";
+    this.status = status;
+  }
+}
+
 const defaultConfig: FetchConfig = {
   baseUrl: "",
 };
@@ -47,14 +57,16 @@ export async function handleFetch<T>(
     const res = await fetch(url, requestInit);
 
     if (!res.ok) {
-      throw new Error(`Request failed with status ${res.status}`);
+      throw new HttpError(res.status);
     }
 
     const payload: T = await res.json();
     onData?.(payload);
   } catch (error) {
     if (error instanceof Error) {
-      logger.error(error);
+      if (!(error instanceof HttpError && error.status === 401)) {
+        logger.error(error);
+      }
       onError?.(error);
     }
   }
