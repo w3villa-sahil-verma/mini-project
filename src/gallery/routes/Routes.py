@@ -48,6 +48,17 @@ def getPublicRouter() -> APIRouter:
     ):
         return await controller.browse(offset=offset, user_id=user_id)
 
+    @router.get("/{image_id}/download")
+    async def download_image(
+        image_id: int,
+        current_user: Annotated[dict, Depends(require_access_token)],
+        controller: Annotated[GalleryController, Depends(GalleryController)],
+    ):
+        return await controller.create_download(
+            image_id=image_id,
+            user_id=int(current_user["user_id"]),
+        )
+
     return router
 
 

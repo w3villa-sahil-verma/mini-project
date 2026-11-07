@@ -215,11 +215,18 @@ generates a one-hour signed GET URL when returning the profile.
 ## Gallery
 
 Anyone can browse `/gallery`; the legacy `/gallary` path remains available.
-Free images are visible to all visitors;
-premium images are unlocked only for a valid signed-in user with an active
-subscription and remain unlocked only through that subscription's expiry.
-Locked premium tiles use a blurred/locked placeholder without returning the
-image URL. Admins manage the gallery at `/admin/gallery`, where images can be
-uploaded in bulk, marked free or premium, paginated, or deleted individually
-and in bulk. Gallery uploads use the same Storj S3-compatible settings and
-5 MB image limits as profile images.
+All visitors receive low-resolution WebP previews; premium images are
+watermarked in the preview. High-resolution originals are available only from
+the authenticated `GET /api/v1/gallery/{image_id}/download` endpoint to users
+with an active Silver or Gold subscription. Silver download access lasts one
+hour and Gold access lasts three hours from the subscription's `starts_at`,
+bounded by the subscription's own expiry. The signed download URL expires no
+later than that access window. The application uses short-lived signed URLs
+for both previews and downloads; keep original gallery objects private in
+Storj.
+
+Admins manage the gallery at `/admin/gallery`, where images can be uploaded in
+bulk, marked free or premium, paginated, or deleted individually and in bulk.
+Gallery uploads use the same Storj S3-compatible settings and 5 MB image limits
+as profile images. The backend generates a bounded-size WebP preview when an
+image upload is completed and rebuilds it when its premium status changes.

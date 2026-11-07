@@ -3,6 +3,7 @@ boto3
 fastapi
 fastapi-mail
 httpx
+Pillow>=10.1,<13
 PyJWT
 pwdlib[argon2]
 pydantic-settings

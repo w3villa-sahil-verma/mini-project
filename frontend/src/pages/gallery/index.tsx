@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useRouteLoaderData } from "react-router";
-import { LockKeyhole, RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -19,13 +19,19 @@ type GalleryImage = {
   is_premium: boolean;
   filename: string;
   image_url: string | null;
+  can_download: boolean;
 };
 
 type GalleryPageData = {
   items: GalleryImage[];
   has_more: boolean;
   next_offset: number;
-  has_premium_access: boolean;
+  download_access_expires_at: string | null;
+};
+
+type GalleryDownloadData = {
+  download_url: string;
+  expires_at: string;
 };
 
 function requestPage(offset: number): Promise<CommonResponse<GalleryPageData>> {
@@ -38,12 +44,30 @@ function requestPage(offset: number): Promise<CommonResponse<GalleryPageData>> {
   });
 }
 
+function requestDownload(
+  imageId: number,
+): Promise<CommonResponse<GalleryDownloadData>> {
+  return new Promise((resolve, reject) => {
+    void handleFetch<CommonResponse<GalleryDownloadData>>(
+      `/api/v1/gallery/${imageId}/download`,
+      resolve,
+      reject,
+    );
+  });
+}
+
 export function GalleryPage() {
   const { user } = useRouteLoaderData<{ user: User | null }>("root")!;
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
+  const [downloadAccessExpiresAt, setDownloadAccessExpiresAt] = useState<
+    string | null
+  >(null);
+  const [downloadingImageId, setDownloadingImageId] = useState<number | null>(
+    null,
+  );
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +95,7 @@ export function GalleryPage() {
             ],
       );
       setHasMore(response.data.has_more);
-      setHasPremiumAccess(response.data.has_premium_access);
+      setDownloadAccessExpiresAt(response.data.download_access_expires_at);
       setOffset(response.data.next_offset);
     } catch (requestError) {
       setError(
@@ -82,6 +106,23 @@ export function GalleryPage() {
     } finally {
       setLoading(false);
       setLoadingMore(false);
+    }
+  }, []);
+
+  const downloadImage = useCallback(async (imageId: number) => {
+    setDownloadingImageId(imageId);
+    setDownloadError(null);
+    try {
+      const response = await requestDownload(imageId);
+      window.location.assign(response.data.download_url);
+    } catch (requestError) {
+      setDownloadError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not download the high-resolution image.",
+      );
+    } finally {
+      setDownloadingImageId(null);
     }
   }, []);
 
@@ -111,16 +152,24 @@ export function GalleryPage() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Gallery</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Browse free images and unlock the full gallery with an active plan.
+            Browse low-resolution previews. Silver enables high-resolution
+            downloads for 1 hour; Gold enables them for 3 hours after membership
+            activation.
           </p>
         </div>
-        {!hasPremiumAccess && (
+        {!downloadAccessExpiresAt && user?.role !== "ADMIN" && (
           <Link
             to={membershipPath}
             className={buttonVariants({ className: "h-9 rounded-lg px-3" })}
           >
-            View membership plans
+            Get high-resolution downloads
           </Link>
+        )}
+        {downloadAccessExpiresAt && (
+          <p className="text-sm text-muted-foreground">
+            Downloads available until{" "}
+            {new Date(downloadAccessExpiresAt).toLocaleTimeString()}.
+          </p>
         )}
       </header>
 
@@ -134,6 +183,12 @@ export function GalleryPage() {
             Retry
           </Button>
         </div>
+      )}
+
+      {downloadError && (
+        <p className="text-sm text-destructive" role="alert">
+          Could not download image: {downloadError}
+        </p>
       )}
 
       <section
@@ -152,15 +207,10 @@ export function GalleryPage() {
                 />
               ) : (
                 <div
-                  className="relative flex size-full items-center justify-center overflow-hidden bg-gradient-to-br from-primary/20 via-muted to-primary/40"
-                  aria-label="Premium image preview is blurred"
+                  className="flex size-full items-center justify-center bg-muted text-sm text-muted-foreground"
+                  aria-label="Image preview unavailable"
                 >
-                  <div className="absolute -left-8 top-8 size-40 rounded-full bg-primary/40 blur-3xl" />
-                  <div className="absolute -right-4 bottom-4 size-36 rounded-full bg-fuchsia-400/40 blur-3xl" />
-                  <div className="relative flex items-center gap-2 rounded-full bg-background/80 px-4 py-2 text-sm font-medium backdrop-blur-md">
-                    <LockKeyhole className="size-4" />
-                    Premium image
-                  </div>
+                  Preview unavailable
                 </div>
               )}
               {image.is_premium && (
@@ -171,17 +221,25 @@ export function GalleryPage() {
             </div>
             <CardHeader className="p-4">
               <CardTitle className="text-sm">
-                {image.is_premium && !hasPremiumAccess
-                  ? "Premium image"
-                  : image.filename}
+                {image.filename}
               </CardTitle>
               <CardDescription>
-                {image.is_premium && !hasPremiumAccess
-                  ? "An active membership is required to view this image."
-                  : image.is_premium
-                    ? "Premium member image"
-                    : "Free image"}
+                {image.is_premium
+                  ? "Watermarked low-resolution premium preview"
+                  : "Low-resolution preview"}
               </CardDescription>
+              {image.can_download && (
+                <Button
+                  variant="outline"
+                  disabled={downloadingImageId === image.id}
+                  onClick={() => void downloadImage(image.id)}
+                >
+                  <Download className="size-4" />
+                  {downloadingImageId === image.id
+                    ? "Preparing download…"
+                    : "Download high resolution"}
+                </Button>
+              )}
             </CardHeader>
           </Card>
         ))}

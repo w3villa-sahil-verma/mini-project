@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from pathlib import PurePath
 from typing import Annotated
@@ -8,7 +9,10 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.Database import getAsyncDbSession
+from src.gallery.services.DownloadAccessService import download_access_expires_at
+from src.gallery.services.ImagePreviewService import create_gallery_preview
 from src.models.ImageAsset import ImageAsset
+from src.models.Plan import Plan
 from src.models.Subscription import Subscription
 from src.models.User import User
 from src.storage.StorjStorage import StorjStorage
@@ -30,6 +34,7 @@ class GalleryController:
     async def browse(self, *, offset: int, user_id: int | None) -> dict:
         premium_expires_at = await self._premium_access_expires_at(user_id)
         has_premium_access = premium_expires_at is not None
+        download_expires_at = await self._download_access_expires_at(user_id)
         query = select(ImageAsset).where(
             ImageAsset.is_gallery.is_(True),
             ImageAsset.status == "READY",
@@ -44,31 +49,20 @@ class GalleryController:
         has_more = len(rows) > GALLERY_PAGE_SIZE
         page = rows[:GALLERY_PAGE_SIZE]
 
-        if premium_expires_at is not None and premium_expires_at.tzinfo is None:
-            premium_expires_at = premium_expires_at.replace(tzinfo=timezone.utc)
-
         payload = []
         for image in page:
-            visible = not image.is_premium or has_premium_access
-            image_url = None
-            if image.is_premium and premium_expires_at is not None:
-                remaining_seconds = int(
-                    (premium_expires_at - datetime.now(timezone.utc)).total_seconds()
-                )
-                image_url = await self.storage.get_image_url(
-                    image.object_key,
-                    expires_in=max(1, min(3600, remaining_seconds)),
-                    use_public_url=False,
-                )
-            elif visible:
-                image_url = await self.storage.get_image_url(image.object_key)
-
+            preview_key = await self._ensure_gallery_preview(image)
+            image_url = await self.storage.get_image_url(
+                preview_key,
+                use_public_url=False,
+            )
             payload.append(
                 {
                     "id": image.id,
                     "is_premium": image.is_premium,
                     "filename": image.original_filename,
                     "image_url": image_url,
+                    "can_download": download_expires_at is not None,
                 }
             )
 
@@ -79,6 +73,45 @@ class GalleryController:
                 "has_more": has_more,
                 "next_offset": offset + len(page),
                 "has_premium_access": has_premium_access,
+                "download_access_expires_at": download_expires_at,
+            },
+        }
+
+    async def create_download(self, *, image_id: int, user_id: int) -> dict:
+        image = await self._get_gallery_image(image_id)
+        if image.status != "READY":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Gallery image not found.",
+            )
+
+        access_expires_at = await self._download_access_expires_at(user_id)
+        if access_expires_at is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="An active Silver or Gold membership is required to download high-resolution images.",
+            )
+
+        remaining_seconds = int(
+            (access_expires_at - datetime.now(timezone.utc)).total_seconds()
+        )
+        if remaining_seconds < 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your high-resolution download access has expired.",
+            )
+
+        download_url = await self.storage.get_image_url(
+            image.object_key,
+            expires_in=min(10800, remaining_seconds),
+            use_public_url=False,
+            download_filename=image.original_filename,
+        )
+        return {
+            "message": "High-resolution download authorized",
+            "data": {
+                "download_url": download_url,
+                "expires_at": access_expires_at,
             },
         }
 
@@ -105,7 +138,10 @@ class GalleryController:
                 {
                     **self._serialize(image),
                     "image_url": (
-                        await self.storage.get_image_url(image.object_key)
+                        await self.storage.get_image_url(
+                            image.object_key,
+                            use_public_url=False,
+                        )
                         if image.status == "READY"
                         else None
                     ),
@@ -187,8 +223,9 @@ class GalleryController:
             image.content_type,
             image.size_bytes,
         )
+        await self._generate_gallery_preview(image)
         image.status = "READY"
-        image.public_url = self.storage.public_url(image.object_key)
+        image.public_url = None
         image.updated_at = datetime.now(timezone.utc)
         await self.db.commit()
         await self.db.refresh(image)
@@ -200,6 +237,8 @@ class GalleryController:
     async def set_premium(self, *, image_id: int, is_premium: bool) -> dict:
         image = await self._get_gallery_image(image_id)
         image.is_premium = is_premium
+        if image.status == "READY":
+            await self._generate_gallery_preview(image)
         image.updated_at = datetime.now(timezone.utc)
         await self.db.commit()
         return {
@@ -209,6 +248,7 @@ class GalleryController:
 
     async def delete_one(self, *, image_id: int) -> dict:
         image = await self._get_gallery_image(image_id)
+        await self.storage.delete_object(self._preview_object_key(image.id))
         await self.storage.delete_object(image.object_key)
         await self.db.delete(image)
         await self.db.commit()
@@ -236,6 +276,7 @@ class GalleryController:
             )
 
         for image in images:
+            await self.storage.delete_object(self._preview_object_key(image.id))
             await self.storage.delete_object(image.object_key)
         await self.db.execute(
             update(ImageAsset)
@@ -264,11 +305,75 @@ class GalleryController:
             .where(
                 Subscription.user_id == user_id,
                 User.is_deleted.is_(False),
-                Subscription.status == "ACTIVE",
+                Subscription.status.in_(("ACTIVE", "SCHEDULED")),
                 Subscription.starts_at <= now,
                 Subscription.expires_at > now,
             )
         )
+
+    async def _download_access_expires_at(
+        self,
+        user_id: int | None,
+    ) -> datetime | None:
+        if user_id is None:
+            return None
+
+        now = datetime.now(timezone.utc)
+        result = await self.db.execute(
+            select(Subscription, Plan.name)
+            .join(Plan, Plan.id == Subscription.plan_id)
+            .join(User, User.id == Subscription.user_id)
+            .where(
+                Subscription.user_id == user_id,
+                User.is_deleted.is_(False),
+                Subscription.status.in_(("ACTIVE", "SCHEDULED")),
+                Subscription.starts_at <= now,
+                Subscription.expires_at > now,
+            )
+        )
+        expirations = [
+            download_access_expires_at(
+                plan_name=plan_name,
+                starts_at=subscription.starts_at,
+                subscription_expires_at=subscription.expires_at,
+                now=now,
+            )
+            for subscription, plan_name in result.all()
+        ]
+        return max(
+            (expires_at for expires_at in expirations if expires_at is not None),
+            default=None,
+        )
+
+    async def _ensure_gallery_preview(self, image: ImageAsset) -> str:
+        preview_key = self._preview_object_key(image.id)
+        if not await self.storage.object_exists(preview_key):
+            await self._generate_gallery_preview(image)
+        return preview_key
+
+    async def _generate_gallery_preview(self, image: ImageAsset) -> None:
+        source = await self.storage.get_object_bytes(image.object_key)
+        try:
+            preview = await asyncio.to_thread(
+                create_gallery_preview,
+                source,
+                image.content_type,
+                watermark=image.is_premium,
+            )
+        except ValueError as error:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(error),
+            ) from error
+        await self.storage.put_object_bytes(
+            self._preview_object_key(image.id),
+            preview,
+            "image/webp",
+        )
+
+    @staticmethod
+    def _preview_object_key(image_id: int) -> str:
+        return f"gallery-previews/{image_id}.webp"
 
     async def _get_gallery_image(self, image_id: int) -> ImageAsset:
         image = await self.db.scalar(

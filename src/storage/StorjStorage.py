@@ -76,6 +76,80 @@ class StorjStorage:
                 detail="Uploaded image metadata does not match the requested file.",
             )
 
+    async def object_exists(self, object_key: str) -> bool:
+        client, bucket = self._get_client_and_bucket()
+        try:
+            await asyncio.to_thread(
+                client.head_object,
+                Bucket=bucket,
+                Key=object_key,
+            )
+            return True
+        except ClientError as error:
+            error_code = error.response.get("Error", {}).get("Code")
+            if error_code in {"404", "NoSuchKey", "NotFound"}:
+                return False
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not check the stored image.",
+            ) from error
+        except BotoCoreError as error:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not check the stored image.",
+            ) from error
+
+    async def get_object_bytes(self, object_key: str) -> bytes:
+        client, bucket = self._get_client_and_bucket()
+
+        def read_object() -> bytes:
+            response = client.get_object(Bucket=bucket, Key=object_key)
+            body = response["Body"]
+            try:
+                return body.read()
+            finally:
+                body.close()
+
+        try:
+            return await asyncio.to_thread(read_object)
+        except ClientError as error:
+            error_code = error.response.get("Error", {}).get("Code")
+            if error_code in {"404", "NoSuchKey", "NotFound"}:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Stored image not found.",
+                ) from error
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not read the stored image.",
+            ) from error
+        except BotoCoreError as error:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not read the stored image.",
+            ) from error
+
+    async def put_object_bytes(
+        self,
+        object_key: str,
+        content: bytes,
+        content_type: str,
+    ) -> None:
+        client, bucket = self._get_client_and_bucket()
+        try:
+            await asyncio.to_thread(
+                client.put_object,
+                Bucket=bucket,
+                Key=object_key,
+                Body=content,
+                ContentType=content_type,
+            )
+        except (BotoCoreError, ClientError) as error:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not save the image preview.",
+            ) from error
+
     async def delete_object(self, object_key: str) -> None:
         client, bucket = self._get_client_and_bucket()
         try:
@@ -96,19 +170,25 @@ class StorjStorage:
         *,
         expires_in: int = 3600,
         use_public_url: bool = True,
+        download_filename: str | None = None,
     ) -> str:
         public_url = self.public_url(object_key) if use_public_url else None
         if public_url:
             return public_url
 
         client, bucket = self._get_client_and_bucket()
-        if expires_in < 1 or expires_in > 3600:
-            raise ValueError("Signed image URL lifetime must be between 1 and 3600 seconds.")
+        if expires_in < 1 or expires_in > 10800:
+            raise ValueError("Signed image URL lifetime must be between 1 and 10800 seconds.")
+        params = {"Bucket": bucket, "Key": object_key}
+        if download_filename is not None:
+            params["ResponseContentDisposition"] = (
+                f"attachment; filename*=UTF-8''{quote(download_filename, safe='')}"
+            )
         try:
             return await asyncio.to_thread(
                 client.generate_presigned_url,
                 "get_object",
-                Params={"Bucket": bucket, "Key": object_key},
+                Params=params,
                 ExpiresIn=expires_in,
             )
         except BotoCoreError as error:
