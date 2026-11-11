@@ -43,7 +43,14 @@ hosts profile and gallery images.
 
 ### Profiles and image storage
 
-- Users can view and update profile information and upload a profile image.
+- Users can view and update personal and address information, upload a profile
+  image, and see their saved location on an interactive Google Map.
+- Google Places address autocomplete helps users find and select an address;
+  selected place details and coordinates populate the profile. Users can also
+  add their current location using browser location access and address
+  geocoding.
+- Users can download a PDF copy of their profile, including personal details,
+  address, and saved coordinates.
 - Profile and gallery uploads use short-lived, pre-signed Storj URLs, keeping
   storage credentials on the backend.
 - The backend verifies uploaded object type and size before marking an asset
@@ -97,6 +104,9 @@ The backend requires a configured MySQL database. Optional integrations require
 their own credentials and settings:
 
 - Google and Facebook OAuth credentials and callback URLs.
+- A Google Maps JavaScript API key for the profile map, Places autocomplete,
+  and geocoding; configure it as the frontend `VITE_GOOGLE_MAPS_API_KEY` and
+  restrict the key to the required APIs and frontend origins.
 - SMTP settings or a deployed Google Apps Script URL and shared secret.
 - Razorpay server credentials and a separately configured frontend checkout
   key.
@@ -107,4 +117,3 @@ frontend origins in `CORS_ALLOWED_ORIGINS`, HTTPS cookie settings, and service
 URLs through deployment environment variables. Never expose backend secrets in
 the frontend or commit them to the repository. See the [README](../README.md)
 for local setup, deployment, and integration configuration.
-
