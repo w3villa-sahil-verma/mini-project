@@ -1,74 +1,103 @@
 # Project Release Notes
 
 **Release:** Current repository snapshot (no version or release tag specified)  
-**Date:** 2026-11-07
+**Date:** 2026-11-11
 
 ## Overview
 
-This project provides a photography gallery and membership-management
-application. Visitors can browse free images, members can access premium
-collections while their subscription is active, and administrators can manage
-gallery content, users, plans, and dashboard data.
+Image Gallery is a photography browsing and membership application. Visitors can
+explore public images, registered users can manage their profiles and purchase a
+membership for premium access, and administrators can manage users, plans, and
+gallery content.
 
-The application consists of a React, TypeScript, and Vite frontend and a
-FastAPI backend using SQLAlchemy and MySQL. Image files are stored using a
-Storj-compatible S3 API.
+The application includes a React, TypeScript, and Vite frontend and a FastAPI
+backend built with SQLAlchemy and MySQL. Storj-compatible S3 object storage
+hosts profile and gallery images.
 
 ## Features
 
-### Accounts and authentication
+### Public browsing and accounts
 
-- Email-and-password registration with an emailed registration link.
-- Google and Facebook OAuth sign-in, including linking provider identities to
-  an existing account with the same email.
-- HTTP-only access and refresh cookies, single-use refresh-token rotation,
-  logout, and frontend retry after an expired access token.
-- Password reset links that expire after 30 minutes and are consumed once;
-  password changes invalidate outstanding refresh tokens.
+- Public home, pricing, and gallery pages, with `/gallery` as the canonical
+  gallery route and `/gallary` supported as a legacy alias.
+- Standard email-and-password registration and sign-in. Registration uses an
+  emailed registration link.
+- Google and Facebook OAuth sign-in. Provider identities can be linked to an
+  existing account with the same email; Google email must be provider-verified
+  and Facebook must return an email address.
+- Password reset by email with a single-use link that expires after 30 minutes.
+  Completing a reset invalidates existing refresh tokens.
+- JWT-based authentication with HTTP-only access and refresh cookies. Refresh
+  tokens are single-use, rotated, stored server-side, and revocable on logout;
+  the frontend refreshes an expired session and retries the failed request.
+- User and administrator roles with protected frontend routes and API access.
 
-### Memberships and payments
+### Email notifications
 
-- Public plan catalog and authenticated checkout using Razorpay.
-- Free plans can be activated without a paid checkout.
-- Backend-side payment signature verification before paid membership activation.
-- Membership scheduling after existing active or scheduled subscriptions, with
-  expiration processing and subscription history.
+- Email delivery follows a strategy pattern behind a shared notification
+  service. Configure the provider to select either SMTP or Google Apps Script.
+- Both providers support registration and password-reset email delivery.
+- Google Apps Script requests use HTTPS and a configured shared secret. Provider
+  errors are surfaced; the application does not silently fall back to another
+  provider.
 
 ### Profiles and image storage
 
-- User profile management and profile-image upload using short-lived Storj
-  pre-signed URLs.
-- Server-side checks of uploaded image type and size before an image is marked
-  ready.
-- JPEG, PNG, and WebP uploads up to 5 MB; profile images can use configured
-  public delivery or signed URLs.
+- Users can view and update profile information and upload a profile image.
+- Profile and gallery uploads use short-lived, pre-signed Storj URLs, keeping
+  storage credentials on the backend.
+- The backend verifies uploaded object type and size before marking an asset
+  ready. JPEG, PNG, and WebP images up to 5 MB are accepted.
+- Profile images can be delivered through configured public Storj links or
+  time-limited signed URLs.
 
-### Gallery
+### Gallery access
 
 - Public, paginated gallery browsing with an infinite-scroll experience.
-- All visitors receive low-resolution WebP previews, with watermarks on
-  premium images.
-- Silver members can download original-resolution images for one hour and Gold
-  members for three hours after membership activation, bounded by subscription
+- Visitors receive low-resolution WebP previews; premium-image previews are
+  watermarked. Original image objects remain private.
+- Authenticated members can request original-resolution downloads through a
+  protected endpoint. Silver access lasts one hour and Gold access lasts three
+  hours after subscription activation, never extending beyond subscription
   expiry.
-- Admin gallery tools for bulk upload, pagination, premium/free classification,
-  and individual or bulk deletion.
-- `/gallery` is the current route; `/gallary` remains as a legacy alias.
+- Administrators can bulk-upload images, paginate the gallery, classify images
+  as free or premium, and delete images individually or in bulk.
+- Premium previews are regenerated when an image's premium classification
+  changes.
 
-### Administration
+### Plans, memberships, and payments
 
-- Role-protected admin dashboard with user, plan, and subscription summaries,
-  recent activity, and upcoming expirations.
-- Paginated user listing with search, role, and account-status filters.
-- Plan management and subscription-expiry visibility.
+- Public catalog of active plans and administrator tools to create, update, and
+  deactivate plans.
+- Free plans can be activated without a paid checkout.
+- Paid checkouts use Razorpay. The backend creates orders using the selected
+  plan's server-side price and verifies the payment signature before activating
+  or scheduling a membership.
+- A new membership is scheduled after an existing active or scheduled
+  membership. Users can retrieve their membership history.
+- A background expiration job marks elapsed subscriptions as expired.
+  Subscription status and premium access are reflected in the user profile and
+  administrator dashboard.
+
+### Administration and dashboards
+
+- Role-protected administrator dashboard with totals for users, plans, active
+  subscriptions, and expired subscriptions.
+- Dashboard charts summarize user registrations and subscriptions over the last
+  12 months. Additional panels show recent users, plan details, upcoming
+  expirations, and recent expirations.
+- Paginated user listing with search by name, email, phone, or ID; independent
+  role and account-status filters; and total-count and pagination metadata.
+- Administrator pages for dashboard reporting, user listing, plan management,
+  and gallery management.
 
 ## Deployment and configuration
 
 The backend requires a configured MySQL database. Optional integrations require
 their own credentials and settings:
 
-- Google/Facebook OAuth application credentials and callback URLs.
-- SMTP or Google Apps Script email delivery.
+- Google and Facebook OAuth credentials and callback URLs.
+- SMTP settings or a deployed Google Apps Script URL and shared secret.
 - Razorpay server credentials and a separately configured frontend checkout
   key.
 - Storj S3-compatible endpoint, bucket, and access credentials.
@@ -77,14 +106,5 @@ For production, configure a cryptographically random `JWT_SECRET_KEY`, exact
 frontend origins in `CORS_ALLOWED_ORIGINS`, HTTPS cookie settings, and service
 URLs through deployment environment variables. Never expose backend secrets in
 the frontend or commit them to the repository. See the [README](../README.md)
-for local setup and integration configuration.
+for local setup, deployment, and integration configuration.
 
-## Validation status
-
-This note describes capabilities present in the repository; it does not certify
-a production deployment. The frontend production build completed and all 14
-backend unit tests passed in the project virtual environment. The modified
-gallery page still reports a pre-existing hook lint error in its initial-load
-effect; its other lint checks pass when that rule is excluded. See the
-[project RCA](./RCA.md) for the assessment scope and recommended follow-up
-actions.
