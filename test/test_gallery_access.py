@@ -184,7 +184,7 @@ class StorjDownloadUrlTests(unittest.IsolatedAsyncioTestCase):
 
 
 class GalleryBrowseTests(unittest.IsolatedAsyncioTestCase):
-    async def test_browse_regenerates_preview_when_storage_head_fails(self) -> None:
+    async def test_browse_returns_200_shape_when_preview_storage_fails(self) -> None:
         db = AsyncMock()
         db.scalar.side_effect = [None, None]
         db.execute.return_value = SimpleNamespace(all=lambda: [])
@@ -208,17 +208,12 @@ class GalleryBrowseTests(unittest.IsolatedAsyncioTestCase):
         storage.get_image_url.return_value = "https://storage.example/preview"
         controller = GalleryController(db=db, storage=storage)
 
-        controller._generate_gallery_preview = AsyncMock()
         response = await controller.browse(offset=0, user_id=42)
 
-        self.assertEqual(response["data"]["items"][0]["image_url"], "https://storage.example/preview")
+        self.assertIsNone(response["data"]["items"][0]["image_url"])
         self.assertTrue(response["data"]["items"][0]["is_premium"])
         self.assertFalse(response["data"]["has_premium_access"])
-        controller._generate_gallery_preview.assert_awaited_once_with(image)
-        storage.get_image_url.assert_awaited_once_with(
-            "gallery-previews/7.webp",
-            use_public_url=False,
-        )
+        storage.get_image_url.assert_not_awaited()
 
 
 if __name__ == "__main__":

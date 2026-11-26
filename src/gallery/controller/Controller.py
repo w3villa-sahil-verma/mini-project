@@ -54,11 +54,23 @@ class GalleryController:
 
         payload = []
         for image in page:
-            preview_key = await self._ensure_gallery_preview(image)
-            image_url = await self.storage.get_image_url(
-                preview_key,
-                use_public_url=False,
-            )
+            image_url = None
+            try:
+                preview_key = await self._ensure_gallery_preview(image)
+                image_url = await self.storage.get_image_url(
+                    preview_key,
+                    use_public_url=False,
+                )
+            except HTTPException as error:
+                logger.warning(
+                    "Gallery image preview unavailable",
+                    extra={
+                        "image_id": image.id,
+                        "operation": "public_gallery_preview",
+                        "status_code": error.status_code,
+                    },
+                    exc_info=error,
+                )
             payload.append(
                 {
                     "id": image.id,
@@ -350,22 +362,7 @@ class GalleryController:
 
     async def _ensure_gallery_preview(self, image: ImageAsset) -> str:
         preview_key = self._preview_object_key(image.id)
-        try:
-            preview_exists = await self.storage.object_exists(preview_key)
-        except HTTPException as error:
-            if error.status_code != status.HTTP_502_BAD_GATEWAY:
-                raise
-            # Some S3-compatible gateways do not reliably support HEAD for
-            # objects that can still be read and written. The preview is
-            # derived from the original, so regenerate it in that case.
-            logger.warning(
-                "Gallery preview HEAD check failed; regenerating preview",
-                extra={"image_id": image.id, "operation": "head_preview"},
-                exc_info=error,
-            )
-            preview_exists = False
-
-        if not preview_exists:
+        if not await self.storage.object_exists(preview_key):
             await self._generate_gallery_preview(image)
         return preview_key
 
