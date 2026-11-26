@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from src.common.token.JwtService import JwtTokenService
@@ -46,7 +46,23 @@ def getPublicRouter() -> APIRouter:
         offset: Annotated[int, Query(ge=0)] = 0,
         user_id: Annotated[int | None, Depends(_optional_user_id)] = None,
     ):
-        return await controller.browse(offset=offset, user_id=user_id)
+        return await controller.browse(
+            offset=offset,
+            user_id=user_id,
+            api_base_url=str(request.base_url).rstrip("/"),
+        )
+
+    @router.get("/{image_id}/preview", include_in_schema=False)
+    async def get_gallery_preview(
+        image_id: int,
+        controller: Annotated[GalleryController, Depends(GalleryController)],
+    ):
+        preview = await controller.get_preview(image_id=image_id)
+        return Response(
+            content=preview,
+            media_type="image/webp",
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
 
     @router.get("/{image_id}/download")
     async def download_image(

@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from datetime import datetime, timezone
 from pathlib import PurePath
 from typing import Annotated
@@ -22,9 +21,6 @@ from src.uploads.controller.Controller import ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZ
 GALLERY_PAGE_SIZE = 24
 MAX_BULK_DELETE = 100
 
-logger = logging.getLogger(__name__)
-
-
 class GalleryController:
     def __init__(
         self,
@@ -34,7 +30,13 @@ class GalleryController:
         self.db = db
         self.storage = storage
 
-    async def browse(self, *, offset: int, user_id: int | None) -> dict:
+    async def browse(
+        self,
+        *,
+        offset: int,
+        user_id: int | None,
+        api_base_url: str,
+    ) -> dict:
         premium_expires_at = await self._premium_access_expires_at(user_id)
         has_premium_access = premium_expires_at is not None
         download_expires_at = await self._download_access_expires_at(user_id)
@@ -54,29 +56,12 @@ class GalleryController:
 
         payload = []
         for image in page:
-            image_url = None
-            try:
-                preview_key = await self._ensure_gallery_preview(image)
-                image_url = await self.storage.get_image_url(
-                    preview_key,
-                    use_public_url=False,
-                )
-            except HTTPException as error:
-                logger.warning(
-                    "Gallery image preview unavailable",
-                    extra={
-                        "image_id": image.id,
-                        "operation": "public_gallery_preview",
-                        "status_code": error.status_code,
-                    },
-                    exc_info=error,
-                )
             payload.append(
                 {
                     "id": image.id,
                     "is_premium": image.is_premium,
                     "filename": image.original_filename,
-                    "image_url": image_url,
+                    "image_url": f"{api_base_url}/api/v1/gallery/{image.id}/preview",
                     "can_download": download_expires_at is not None,
                 }
             )
@@ -91,6 +76,28 @@ class GalleryController:
                 "download_access_expires_at": download_expires_at,
             },
         }
+
+    async def get_preview(self, *, image_id: int) -> bytes:
+        image = await self._get_gallery_image(image_id)
+        if image.status != "READY":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Gallery image not found.",
+            )
+
+        source = await self.storage.get_object_bytes(image.object_key)
+        try:
+            return await asyncio.to_thread(
+                create_gallery_preview,
+                source,
+                image.content_type,
+                watermark=image.is_premium,
+            )
+        except ValueError as error:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(error),
+            ) from error
 
     async def create_download(self, *, image_id: int, user_id: int) -> dict:
         image = await self._get_gallery_image(image_id)
@@ -359,12 +366,6 @@ class GalleryController:
             (expires_at for expires_at in expirations if expires_at is not None),
             default=None,
         )
-
-    async def _ensure_gallery_preview(self, image: ImageAsset) -> str:
-        preview_key = self._preview_object_key(image.id)
-        if not await self.storage.object_exists(preview_key):
-            await self._generate_gallery_preview(image)
-        return preview_key
 
     async def _generate_gallery_preview(self, image: ImageAsset) -> None:
         source = await self.storage.get_object_bytes(image.object_key)

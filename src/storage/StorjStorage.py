@@ -142,6 +142,7 @@ class StorjStorage:
                 Bucket=bucket,
                 Key=object_key,
                 Body=content,
+                ContentLength=len(content),
                 ContentType=content_type,
             )
         except (BotoCoreError, ClientError) as error:
