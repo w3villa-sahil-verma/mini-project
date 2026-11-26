@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime, timezone
 from pathlib import PurePath
 from typing import Annotated
@@ -20,6 +21,8 @@ from src.uploads.controller.Controller import ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZ
 
 GALLERY_PAGE_SIZE = 24
 MAX_BULK_DELETE = 100
+
+logger = logging.getLogger(__name__)
 
 
 class GalleryController:
@@ -347,7 +350,22 @@ class GalleryController:
 
     async def _ensure_gallery_preview(self, image: ImageAsset) -> str:
         preview_key = self._preview_object_key(image.id)
-        if not await self.storage.object_exists(preview_key):
+        try:
+            preview_exists = await self.storage.object_exists(preview_key)
+        except HTTPException as error:
+            if error.status_code != status.HTTP_502_BAD_GATEWAY:
+                raise
+            # Some S3-compatible gateways do not reliably support HEAD for
+            # objects that can still be read and written. The preview is
+            # derived from the original, so regenerate it in that case.
+            logger.warning(
+                "Gallery preview HEAD check failed; regenerating preview",
+                extra={"image_id": image.id, "operation": "head_preview"},
+                exc_info=error,
+            )
+            preview_exists = False
+
+        if not preview_exists:
             await self._generate_gallery_preview(image)
         return preview_key
 
